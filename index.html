@@ -13,6 +13,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- =====================
+ 1. HTML (Embed у Webflow)
+ Скопіюйте цей блок <div class="glass-player" id="playerContainer"> у Embed-блок Webflow
+===================== -->
 <div class="glass-player" id="playerContainer">
   <a class="niceguys-label" id="niceguysLabel" href="https://www.niceguys.agency/" target="_blank" rel="noopener noreferrer">NiceGuysPlayer</a>
   <video id="myVideo" src="https://www.w3schools.com/html/mov_bbb.mp4" preload="metadata"></video>
@@ -74,6 +78,16 @@
   </div>
   <div class="time" id="timeDisplay">00:00 / 00:00</div>
 </div>
+
+<!-- =====================
+ 2. CSS (Style у Webflow або у <style> в Embed)
+ Скопіюйте вміст style.css у <style>...</style> у Embed або у налаштування сторінки Webflow
+===================== -->
+
+<!-- =====================
+ 3. JS (Script у Webflow або у <script> в Embed)
+ Скопіюйте цей скрипт у <script>...</script> у Embed або у налаштування сторінки Webflow
+===================== -->
 <script>
   const playerContainer = document.getElementById('playerContainer');
   const video = document.getElementById('myVideo');
@@ -303,5 +317,16 @@
     }
   });
 </script>
+
+<!-- =====================
+ 4. Інструкція
+===================== -->
+<!--
+1. Додайте Embed-блок у Webflow на потрібну сторінку.
+2. Вставте HTML-код (див. вище, частина 1).
+3. Додайте CSS (частина 2) у <style> або у налаштування сторінки.
+4. Додайте JS (частина 3) у <script> або у налаштування сторінки.
+5. За потреби змініть src відео у <video> або зробіть динамічним через CMS.
+-->
 </body>
 </html>
