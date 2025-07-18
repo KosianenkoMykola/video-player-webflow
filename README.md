@@ -11,9 +11,22 @@
 
 ## Використання як div (Embed) у Webflow
 
-1. Додайте Embed-блок у Webflow на потрібну сторінку.
-2. Скопіюйте HTML-код плеєра у Embed:
+> **Рекомендація:** Для найкращої організації створіть **3 окремі Embed Code блоки** у Webflow:
+> 1. Перший — для HTML (структура плеєра)
+> 2. Другий — для CSS (стилі у `<style>...</style>`)
+> 3. Третій — для JS (скрипт у `<script>...</script>`)
 
+### Приклад структури у Webflow:
+
+![Webflow Embed Structure](./Screenshot 2025-07-18 at 15.27.22.png)
+
+### Як виглядає плеєр:
+
+![Player Example](./Screenshot 2025-07-18 at 15.27.41.png)
+
+---
+
+### 1. HTML (Embed Code Block 1)
 ```html
 <div class="glass-player" id="playerContainer">
   <a class="niceguys-label" id="niceguysLabel" href="https://www.niceguys.agency/" target="_blank" rel="noopener noreferrer">NiceGuysPlayer</a>
@@ -78,8 +91,7 @@
 </div>
 ```
 
-3. Додайте CSS-стилі у `<style>...</style>` у Embed або у налаштування сторінки:
-
+### 2. CSS (Embed Code Block 2)
 ```css
 .glass-player {
   position: relative;
@@ -276,8 +288,7 @@ body {
 } 
 ```
 
-4. Додайте JS-код у `<script>...</script>` у Embed або у налаштування сторінки:
-
+### 3. JS (Embed Code Block 3)
 ```html
 <script>
   const playerContainer = document.getElementById('playerContainer');
@@ -529,81 +540,32 @@ Replace `YOUR_VIDEO_LINK` with a direct .mp4/.webm link.
 
 ### Usage as div (Embed) in Webflow
 
-1. Add an Embed block in Webflow.
-2. Copy the HTML code below into the Embed:
+> **Tip:** For best organization, create **3 separate Embed Code blocks** in Webflow:
+> 1. First — for HTML (player structure)
+> 2. Second — for CSS (styles in `<style>...</style>`)
+> 3. Third — for JS (script in `<script>...</script>`)
 
+#### Example structure in Webflow:
+
+![Webflow Embed Structure](./Screenshot 2025-07-18 at 15.27.22.png)
+
+#### Player example:
+
+![Player Example](./Screenshot 2025-07-18 at 15.27.41.png)
+
+---
+
+#### 1. HTML (Embed Code Block 1)
 ```html
-<div class="glass-player" id="playerContainer">
-  <a class="niceguys-label" id="niceguysLabel" href="https://www.niceguys.agency/" target="_blank" rel="noopener noreferrer">NiceGuysPlayer</a>
-  <video id="myVideo" src="https://www.w3schools.com/html/mov_bbb.mp4" preload="metadata"></video>
-  <button class="center-play" id="centerPlayBtn" aria-label="Play">
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="24" r="24" fill="rgba(255,255,255,0.25)"/>
-      <polygon points="18,14 36,24 18,34" fill="currentColor"/>
-    </svg>
-  </button>
-  <div class="controls visible" id="controlsBar">
-    <div class="controls-container">
-      <button class="glass-btn" id="rewindBtn" title="Back 15s">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6" stroke="currentColor" stroke-width="2" fill="none"/>
-      </svg>
-    </button>
-    <button class="glass-btn" id="playPauseBtn" title="Play/Pause">
-      <svg id="playIcon" width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <polygon points="6,4 20,12 6,20" fill="currentColor"/>
-      </svg>
-      <svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display:none;">
-        <rect x="6" y="4" width="4" height="16" fill="currentColor"/>
-        <rect x="14" y="4" width="4" height="16" fill="currentColor"/>
-      </svg>
-    </button>
-    <button class="glass-btn" id="forwardBtn" title="Forward 15s">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6" stroke="currentColor" stroke-width="2" fill="none"/>
-      </svg>
-    </button>
-    </div>
-    <div class="controls-container">
-      <div class="volume-container">
-      <input type="range" min="0" max="1" step="0.01" value="1" class="volume-slider" id="volumeSlider" title="Volume">
-    <button class="glass-btn" id="muteBtn" title="Mute/Unmute">
-      <svg id="volumeIcon" width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <polygon points="5,9 9,9 13,5 13,19 9,15 5,15" fill="currentColor"/>
-        <path d="M16 8c1.5 1.5 1.5 6 0 7.5" stroke="currentColor" stroke-width="2" fill="none"/>
-      </svg>
-      <svg id="muteIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display:none;">
-        <polygon points="5,9 9,9 13,5 13,19 9,15 5,15" fill="currentColor"/>
-        <line x1="17" y1="7" x2="21" y2="17" stroke="currentColor" stroke-width="2"/>
-        <line x1="21" y1="7" x2="17" y2="17" stroke="currentColor" stroke-width="2"/>
-      </svg>
-    </button>
-    </div>
-    <button class="glass-btn" id="fullscreenBtn" title="Fullscreen">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <polyline points="4,8 4,4 8,4" stroke="currentColor" stroke-width="2" fill="none"/>
-        <polyline points="16,4 20,4 20,8" stroke="currentColor" stroke-width="2" fill="none"/>
-        <polyline points="20,16 20,20 16,20" stroke="currentColor" stroke-width="2" fill="none"/>
-        <polyline points="8,20 4,20 4,16" stroke="currentColor" stroke-width="2" fill="none"/>
-      </svg>
-    </button>
-    </div>
-  </div>
-  <div class="progress-bar" id="progressBar">
-    <div class="progress" id="progress"></div>
-  </div>
-  <div class="time" id="timeDisplay">00:00 / 00:00</div>
-</div>
+<!-- ...same as above... -->
 ```
 
-3. Add CSS styles in a `<style>...</style>` tag in the Embed or in page settings:
-
+#### 2. CSS (Embed Code Block 2)
 ```css
 /* ...same as above... */
 ```
 
-4. Add JS code in a `<script>...</script>` tag in the Embed or in page settings:
-
+#### 3. JS (Embed Code Block 3)
 ```html
 <script>
 /* ...same as above... */
@@ -614,4 +576,12 @@ Replace `YOUR_VIDEO_LINK` with a direct .mp4/.webm link.
 
 **Note:**
 - If you use as div, the src parameter in URL will not work — you must set the src in code or via CMS.
-- All three parts (HTML, CSS, JS) are required for full functionality. 
+- All three parts (HTML, CSS, JS) are required for full functionality.
+
+---
+
+---
+
+### Авторство / Credits
+
+Made with ❤️ by [Nice Guys Digital Design Agency](https://www.niceguys.agency/) 
