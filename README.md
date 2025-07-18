@@ -1,5 +1,9 @@
 # NiceGuysPlayer for Webflow (Vercel-ready)
 
+### Авторство / Credits
+
+Made with ❤️ by [Nice Guys Digital Design Agency](https://www.niceguys.agency/) 
+
 ## Використання через iframe (рекомендовано)
 
 ```html
@@ -18,11 +22,11 @@
 
 ### Приклад структури у Webflow:
 
-![Webflow Embed Structure](./Screenshot 2025-07-18 at 15.27.22.png)
+![Webflow Embed Structure](./video/Screenshot%202025-07-18%20at%2015.27.22.png)
 
 ### Як виглядає плеєр:
 
-![Player Example](./Screenshot 2025-07-18 at 15.27.41.png)
+![Player Example](./video/Screenshot%202025-07-18%20at%2015.27.41.png)
 
 ---
 
@@ -547,11 +551,11 @@ Replace `YOUR_VIDEO_LINK` with a direct .mp4/.webm link.
 
 #### Example structure in Webflow:
 
-![Webflow Embed Structure](./Screenshot 2025-07-18 at 15.27.22.png)
+![Webflow Embed Structure](./video/Screenshot%202025-07-18%20at%2015.27.22.png)
 
 #### Player example:
 
-![Player Example](./Screenshot 2025-07-18 at 15.27.41.png)
+![Player Example](./video/Screenshot%202025-07-18%20at%2015.27.41.png)
 
 ---
 
@@ -581,7 +585,3 @@ Replace `YOUR_VIDEO_LINK` with a direct .mp4/.webm link.
 ---
 
 ---
-
-### Авторство / Credits
-
-Made with ❤️ by [Nice Guys Digital Design Agency](https://www.niceguys.agency/) 
