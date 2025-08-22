@@ -6,3 +6,8 @@ sort.html
 form2.html
 form3ac.html
 glass.html
+# Ignore large videos
+video/*.MOV
+video/*.MP4
+video/*.mov
+video/*.mp4
