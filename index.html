@@ -19,7 +19,7 @@
 ===================== -->
 <div class="glass-player" id="playerContainer">
   <a class="niceguys-label" id="niceguysLabel" href="https://www.niceguys.agency/" target="_blank" rel="noopener noreferrer">NiceGuysPlayer</a>
-  <video id="myVideo" src="/video/IMG_1531.MOV" preload="metadata"></video>
+  <video id="myVideo" src="/video/IMG_9701.MP4" preload="metadata"></video>
   <button class="center-play" id="centerPlayBtn" aria-label="Play">
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
       <circle cx="24" cy="24" r="24" fill="rgba(255,255,255,0.25)"/>
@@ -63,6 +63,12 @@
       </svg>
     </button>
     </div>
+    <button class="glass-btn" id="pipBtn" title="Picture in Picture">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+        <rect x="12" y="11" width="8" height="5" rx="1" fill="currentColor"/>
+      </svg>
+    </button>
     <button class="glass-btn" id="fullscreenBtn" title="Fullscreen">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <polyline points="4,8 4,4 8,4" stroke="currentColor" stroke-width="2" fill="none"/>
@@ -89,232 +95,267 @@
  Скопіюйте цей скрипт у <script>...</script> у Embed або у налаштування сторінки Webflow
 ===================== -->
 <script>
-  const playerContainer = document.getElementById('playerContainer');
-  const video = document.getElementById('myVideo');
-  const playPauseBtn = document.getElementById('playPauseBtn');
-  const rewindBtn = document.getElementById('rewindBtn');
-  const forwardBtn = document.getElementById('forwardBtn');
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-  const muteBtn = document.getElementById('muteBtn');
-  const volumeSlider = document.getElementById('volumeSlider');
-  const progressBar = document.getElementById('progressBar');
-  const progress = document.getElementById('progress');
-  const timeDisplay = document.getElementById('timeDisplay');
-  const centerPlayBtn = document.getElementById('centerPlayBtn');
-  const controlsBar = document.getElementById('controlsBar');
-  const niceguysLabel = document.getElementById('niceguysLabel');
-  // SVGs for dynamic icons
-  const playIcon = document.getElementById('playIcon');
-  const pauseIcon = document.getElementById('pauseIcon');
-  const volumeIcon = document.getElementById('volumeIcon');
-  const muteIcon = document.getElementById('muteIcon');
+  document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const globalParamSrc = urlParams.get('src');
 
-  // --- NEW: Set video src from URL param if present ---
-  const urlParams = new URLSearchParams(window.location.search);
-  const videoSrc = urlParams.get('src');
-  if (videoSrc) {
-    video.src = videoSrc;
-  }
-  // --- END NEW ---
+    const containers = document.querySelectorAll('.glass-player');
+    const videos = [];
 
-  let controlsTimeout;
-  let isMouseOver = false;
-  let hasStarted = false;
+    containers.forEach(function (playerContainer) {
+      const video = playerContainer.querySelector('video');
+      if (!video) return;
 
-  // Remove native controls
-  video.removeAttribute('controls');
-
-  // Show/hide controls logic
-  function showControls() {
-    if (!hasStarted) return;
-    controlsBar.classList.add('visible');
-    controlsBar.classList.remove('hidden');
-    timeDisplay.classList.remove('hidden');
-    niceguysLabel.classList.remove('hidden');
-    progressBar.classList.remove('hidden');
-    clearTimeout(controlsTimeout);
-    if (!video.paused) {
-      controlsTimeout = setTimeout(hideControls, 2500);
-    }
-  }
-  function hideControls() {
-    if (!isMouseOver && !video.paused) {
-      controlsBar.classList.remove('visible');
-      controlsBar.classList.add('hidden');
-      timeDisplay.classList.add('hidden');
-      niceguysLabel.classList.add('hidden');
-      progressBar.classList.add('hidden');
-    }
-  }
-  playerContainer.addEventListener('mousemove', showControls);
-  playerContainer.addEventListener('touchstart', showControls);
-  controlsBar.addEventListener('mouseenter', () => { isMouseOver = true; });
-  controlsBar.addEventListener('mouseleave', () => { isMouseOver = false; });
-  video.addEventListener('play', showControls);
-  video.addEventListener('pause', showControls);
-  video.addEventListener('ended', showControls);
-
-  // Hide controls after inactivity
-  video.addEventListener('play', () => {
-    controlsTimeout = setTimeout(hideControls, 2500);
-  });
-  video.addEventListener('pause', () => {
-    clearTimeout(controlsTimeout);
-    showControls();
-  });
-
-  // Center play button logic
-  function showCenterPlay() {
-    centerPlayBtn.classList.remove('hidden');
-  }
-  function hideCenterPlay() {
-    centerPlayBtn.classList.add('hidden');
-  }
-  centerPlayBtn.addEventListener('click', () => {
-    video.play();
-    hideCenterPlay();
-    hasStarted = true;
-    controlsBar.classList.add('visible');
-    controlsBar.classList.remove('hidden');
-    timeDisplay.classList.remove('hidden');
-    niceguysLabel.classList.remove('hidden');
-    progressBar.classList.remove('hidden');
-  });
-  video.addEventListener('play', hideCenterPlay);
-  video.addEventListener('pause', () => {
-    if (video.currentTime === 0 || video.currentTime === video.duration) {
-      showCenterPlay();
-    } else {
-      showControls();
-    }
-  });
-  // Show center play on load, hide controls/time until play
-  if (video.paused) {
-    showCenterPlay();
-    controlsBar.classList.remove('visible');
-    controlsBar.classList.add('hidden');
-    timeDisplay.classList.add('hidden');
-    niceguysLabel.classList.add('hidden');
-    progressBar.classList.add('hidden');
-  }
-
-  // Play/Pause toggle
-  playPauseBtn.onclick = function() {
-    if (video.paused) {
-      video.play();
-    } else {
-      video.pause();
-    }
-  };
-  video.onplay = function() {
-    playIcon.style.display = 'none';
-    pauseIcon.style.display = 'inline';
-    hideCenterPlay();
-    showControls();
-  };
-  video.onpause = function() {
-    playIcon.style.display = 'inline';
-    pauseIcon.style.display = 'none';
-    if (video.currentTime === 0 || video.currentTime === video.duration) {
-      showCenterPlay();
-    }
-  };
-
-  // Rewind 15s
-  rewindBtn.onclick = function() {
-    video.currentTime = Math.max(0, video.currentTime - 15);
-    showControls();
-  };
-  // Forward 15s
-  forwardBtn.onclick = function() {
-    video.currentTime = Math.min(video.duration, video.currentTime + 15);
-    showControls();
-  };
-
-  // Fullscreen
-  function isFullScreen() {
-    return document.fullscreenElement === playerContainer || document.webkitFullscreenElement === playerContainer || document.msFullscreenElement === playerContainer;
-  }
-  fullscreenBtn.onclick = function() {
-    if (!isFullScreen()) {
-      if (playerContainer.requestFullscreen) {
-        playerContainer.requestFullscreen();
-      } else if (playerContainer.webkitRequestFullscreen) {
-        playerContainer.webkitRequestFullscreen();
-      } else if (playerContainer.msRequestFullscreen) {
-        playerContainer.msRequestFullscreen();
+      // Allow per-page override via ?src=... OR per-player via data-video-src
+      const attrSrc = playerContainer.getAttribute('data-video-src');
+      if (globalParamSrc) {
+        video.src = globalParamSrc;
+      } else if (attrSrc) {
+        video.src = attrSrc;
       }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+
+      videos.push(video);
+
+      // Scoped controls inside this container
+      const playPauseBtn = playerContainer.querySelector('#playPauseBtn');
+      const rewindBtn = playerContainer.querySelector('#rewindBtn');
+      const forwardBtn = playerContainer.querySelector('#forwardBtn');
+      const fullscreenBtn = playerContainer.querySelector('#fullscreenBtn');
+      const pipBtn = playerContainer.querySelector('#pipBtn');
+      const muteBtn = playerContainer.querySelector('#muteBtn');
+      const volumeSlider = playerContainer.querySelector('#volumeSlider');
+      const progressBar = playerContainer.querySelector('#progressBar');
+      const progress = playerContainer.querySelector('#progress');
+      const timeDisplay = playerContainer.querySelector('#timeDisplay');
+      const centerPlayBtn = playerContainer.querySelector('#centerPlayBtn');
+      const controlsBar = playerContainer.querySelector('#controlsBar');
+      const niceguysLabel = playerContainer.querySelector('#niceguysLabel');
+      const playIcon = playerContainer.querySelector('#playIcon');
+      const pauseIcon = playerContainer.querySelector('#pauseIcon');
+      const volumeIcon = playerContainer.querySelector('#volumeIcon');
+      const muteIcon = playerContainer.querySelector('#muteIcon');
+
+      let controlsTimeout;
+      let isMouseOver = false;
+      let hasStarted = false;
+
+      // Remove native controls
+      video.removeAttribute('controls');
+
+      function showControls() {
+        if (!hasStarted) return;
+        if (controlsBar) {
+          controlsBar.classList.add('visible');
+          controlsBar.classList.remove('hidden');
+        }
+        if (timeDisplay) timeDisplay.classList.remove('hidden');
+        if (niceguysLabel) niceguysLabel.classList.remove('hidden');
+        if (progressBar) progressBar.classList.remove('hidden');
+        clearTimeout(controlsTimeout);
+        if (!video.paused) {
+          controlsTimeout = setTimeout(hideControls, 2500);
+        }
       }
-    }
-    showControls();
-  };
 
-  // Volume slider
-  volumeSlider.oninput = function() {
-    video.volume = this.value;
-    updateVolumeIcon();
-    showControls();
-  };
-  // Mute/Unmute
-  muteBtn.onclick = function() {
-    video.muted = !video.muted;
-    updateVolumeIcon();
-    volumeSlider.value = video.muted ? 0 : video.volume;
-    showControls();
-  };
-  function updateVolumeIcon() {
-    if (video.muted || video.volume === 0) {
-      volumeIcon.style.display = 'none';
-      muteIcon.style.display = 'inline';
-    } else {
-      volumeIcon.style.display = 'inline';
-      muteIcon.style.display = 'none';
-    }
-  }
+      function hideControls() {
+        if (!isMouseOver && !video.paused) {
+          if (controlsBar) {
+            controlsBar.classList.remove('visible');
+            controlsBar.classList.add('hidden');
+          }
+          if (timeDisplay) timeDisplay.classList.add('hidden');
+          if (niceguysLabel) niceguysLabel.classList.add('hidden');
+          if (progressBar) progressBar.classList.add('hidden');
+        }
+      }
 
-  // Progress bar update
-  video.ontimeupdate = function() {
-    const percent = (video.currentTime / video.duration) * 100;
-    progress.style.width = percent + '%';
-    updateTimeDisplay();
-  };
-  video.onloadedmetadata = updateTimeDisplay;
+      playerContainer.addEventListener('mousemove', showControls);
+      playerContainer.addEventListener('touchstart', showControls);
+      if (controlsBar) {
+        controlsBar.addEventListener('mouseenter', function () { isMouseOver = true; });
+        controlsBar.addEventListener('mouseleave', function () { isMouseOver = false; });
+      }
+      video.addEventListener('play', showControls);
+      video.addEventListener('pause', showControls);
+      video.addEventListener('ended', showControls);
 
-  // Seek on progress bar click
-  progressBar.onclick = function(e) {
-    const rect = progressBar.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percent = x / rect.width;
-    video.currentTime = percent * video.duration;
-    showControls();
-  };
+      // inactivity
+      video.addEventListener('play', function () {
+        controlsTimeout = setTimeout(hideControls, 2500);
+      });
+      video.addEventListener('pause', function () {
+        clearTimeout(controlsTimeout);
+        showControls();
+      });
 
-  function updateTimeDisplay() {
-    const format = t => {
-      if (isNaN(t)) return '00:00';
-      const m = Math.floor(t / 60);
-      const s = Math.floor(t % 60);
-      return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    };
-    timeDisplay.textContent = `${format(video.currentTime)} / ${format(video.duration)}`;
-  }
+      function showCenterPlay() { if (centerPlayBtn) centerPlayBtn.classList.remove('hidden'); }
+      function hideCenterPlay() { if (centerPlayBtn) centerPlayBtn.classList.add('hidden'); }
 
-  // Toggle play/pause on video click (not on controls)
-  video.addEventListener('click', function(e) {
-    // Prevent toggling if clicking on controls
-    if (e.target.closest('.controls') || e.target.closest('.progress-bar')) return;
-    if (video.paused) {
-      video.play();
-    } else {
-      video.pause();
-    }
+      if (centerPlayBtn) {
+        centerPlayBtn.addEventListener('click', function () {
+          video.play();
+          hideCenterPlay();
+          hasStarted = true;
+          if (controlsBar) {
+            controlsBar.classList.add('visible');
+            controlsBar.classList.remove('hidden');
+          }
+          if (timeDisplay) timeDisplay.classList.remove('hidden');
+          if (niceguysLabel) niceguysLabel.classList.remove('hidden');
+          if (progressBar) progressBar.classList.remove('hidden');
+        });
+      }
+      video.addEventListener('play', hideCenterPlay);
+      video.addEventListener('pause', function () {
+        if (video.currentTime === 0 || video.currentTime === video.duration) {
+          showCenterPlay();
+        } else {
+          showControls();
+        }
+      });
+
+      if (video.paused) {
+        showCenterPlay();
+        if (controlsBar) {
+          controlsBar.classList.remove('visible');
+          controlsBar.classList.add('hidden');
+        }
+        if (timeDisplay) timeDisplay.classList.add('hidden');
+        if (niceguysLabel) niceguysLabel.classList.add('hidden');
+        if (progressBar) progressBar.classList.add('hidden');
+      }
+
+      // play/pause
+      if (playPauseBtn) {
+        playPauseBtn.onclick = function () {
+          if (video.paused) video.play(); else video.pause();
+        };
+      }
+      video.addEventListener('play', function () {
+        // pause the others
+        videos.forEach(function (v) { if (v !== video) v.pause(); });
+        if (playIcon && pauseIcon) { playIcon.style.display = 'none'; pauseIcon.style.display = 'inline'; }
+      });
+      video.addEventListener('pause', function () {
+        if (playIcon && pauseIcon) { playIcon.style.display = 'inline'; pauseIcon.style.display = 'none'; }
+      });
+
+      // seek +/-
+      if (rewindBtn) {
+        rewindBtn.onclick = function () { video.currentTime = Math.max(0, video.currentTime - 15); showControls(); };
+      }
+      if (forwardBtn) {
+        forwardBtn.onclick = function () { video.currentTime = Math.min(video.duration || 0, video.currentTime + 15); showControls(); };
+      }
+
+      // fullscreen per container
+      function isFullScreen() {
+        return document.fullscreenElement === playerContainer || document.webkitFullscreenElement === playerContainer || document.msFullscreenElement === playerContainer;
+      }
+      function isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      }
+      // PiP: show only when supported and not iOS
+      const pipSupported = 'pictureInPictureEnabled' in document && typeof video.requestPictureInPicture === 'function';
+      if (pipBtn) {
+        if (!pipSupported || isIOS()) {
+          pipBtn.style.display = 'none';
+        } else {
+          pipBtn.onclick = async function () {
+            try {
+              if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+              } else {
+                await video.requestPictureInPicture();
+              }
+              showControls();
+            } catch (e) {}
+          };
+        }
+      }
+      if (fullscreenBtn) {
+        fullscreenBtn.onclick = function () {
+          // iOS Safari/Chrome: request fullscreen on <video>
+          if (isIOS() && typeof video.webkitEnterFullscreen === 'function') {
+            try { video.webkitEnterFullscreen(); } catch (e) {}
+            return;
+          }
+          if (!isFullScreen()) {
+            if (playerContainer.requestFullscreen) playerContainer.requestFullscreen();
+            else if (playerContainer.webkitRequestFullscreen) playerContainer.webkitRequestFullscreen();
+            else if (playerContainer.msRequestFullscreen) playerContainer.msRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+          }
+          showControls();
+        };
+      }
+
+      // volume/mute
+      if (volumeSlider) {
+        volumeSlider.oninput = function () {
+          video.volume = this.value;
+          updateVolumeIcon();
+          showControls();
+        };
+      }
+      if (muteBtn) {
+        muteBtn.onclick = function () {
+          video.muted = !video.muted;
+          updateVolumeIcon();
+          if (volumeSlider) volumeSlider.value = video.muted ? 0 : video.volume;
+          showControls();
+        };
+      }
+      function updateVolumeIcon() {
+        if (volumeIcon && muteIcon) {
+          if (video.muted || video.volume === 0) {
+            volumeIcon.style.display = 'none';
+            muteIcon.style.display = 'inline';
+          } else {
+            volumeIcon.style.display = 'inline';
+            muteIcon.style.display = 'none';
+          }
+        }
+      }
+
+      // progress/time
+      video.addEventListener('timeupdate', function () {
+        const percent = (video.currentTime / (video.duration || 1)) * 100;
+        if (progress) progress.style.width = percent + '%';
+        updateTimeDisplay();
+      });
+      video.addEventListener('loadedmetadata', updateTimeDisplay);
+
+      if (progressBar) {
+        progressBar.onclick = function (e) {
+          const rect = progressBar.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const percent = x / rect.width;
+          video.currentTime = percent * (video.duration || 0);
+          showControls();
+        };
+      }
+
+      function updateTimeDisplay() {
+        if (!timeDisplay) return;
+        const format = function (t) {
+          if (isNaN(t)) return '00:00';
+          const m = Math.floor(t / 60);
+          const s = Math.floor(t % 60);
+          return (m.toString().padStart(2,'0') + ':' + s.toString().padStart(2,'0'));
+        };
+        timeDisplay.textContent = format(video.currentTime) + ' / ' + format(video.duration);
+      }
+
+      // click on video toggles play
+      video.addEventListener('click', function (e) {
+        if (e.target.closest('.controls') || e.target.closest('.progress-bar')) return;
+        if (video.paused) video.play(); else video.pause();
+      });
+    });
   });
 </script>
 
