@@ -19,7 +19,7 @@
 ===================== -->
 <div class="glass-player" id="playerContainer">
   <a class="niceguys-label" id="niceguysLabel" href="https://www.niceguys.agency/" target="_blank" rel="noopener noreferrer">NiceGuysPlayer</a>
-  <video id="myVideo" src="/video/IMG_9701.MP4" preload="metadata"></video>
+  <video id="myVideo" src="/video/IMG_9701.MP4" preload="metadata" poster="/video/IMG_9701.MP4"></video>
   <button class="center-play" id="centerPlayBtn" aria-label="Play">
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
       <circle cx="24" cy="24" r="24" fill="rgba(255,255,255,0.25)"/>
@@ -141,6 +141,14 @@
 
       // Remove native controls
       video.removeAttribute('controls');
+
+      // Poster should cover the whole container until playback starts
+      if (video.getAttribute('poster')) {
+        if (video.paused) video.classList.add('poster-cover');
+        video.addEventListener('play', function () {
+          video.classList.remove('poster-cover');
+        }, { once: true });
+      }
 
       function showControls() {
         if (!hasStarted) return;

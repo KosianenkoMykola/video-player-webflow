@@ -42,6 +42,10 @@
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   display: block;
 }
+/* When a poster image is shown, allow covering the entire container without letterboxing */
+.glass-player video.poster-cover {
+  object-fit: cover;
+}
 .controls {
   position: absolute;
   left: 24px;
