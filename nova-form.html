@@ -1,0 +1,318 @@
+<form
+    id="wf-form-form"
+    name="wf-form-form"
+    method="post"
+    aria-label="form"
+    data-sheets-form="true"
+    data-success-path="/success-page"
+  >
+    <ul role="list" class="form_list w-list-unstyled">
+      <li class="form_item">
+        <label for="name2" class="body_small">Прізвище*</label>
+        <input class="text-field w-input" maxlength="256" name="name2" placeholder="Прізвище" type="text" id="name2" required>
+      </li>
+  
+      <li class="form_item">
+        <label for="name" class="body_small">Імʼя*</label>
+        <input class="text-field w-input" maxlength="256" name="name" placeholder="Імʼя" type="text" id="name" required>
+      </li>
+  
+      <li class="form_item">
+        <label for="name3" class="body_small">По-Батькові*</label>
+        <input class="text-field w-input" maxlength="256" name="name3" placeholder="По-Батькові" type="text" id="name3" required>
+      </li>
+  
+      <li class="form_item">
+        <label for="phone" class="body_small">Номер телефону*</label>
+        <input class="text-field phone-input w-input" maxlength="256" name="phone" placeholder="+38 (0__) ___ __ __" type="text" id="phone">
+      </li>
+  
+      <li class="form_item">
+        <label for="telegram" class="body_small">Нік в телеграмі</label>
+        <input class="text-field w-input" maxlength="256" name="telegram" placeholder="Нік в телеграмі" type="text" id="telegram">
+      </li>
+  
+      <li class="form_item">
+        <label for="specialty" class="body_small">Оберіть спеціальність</label>
+        <select id="specialty" name="specialty" required class="text-field w-select">
+                  <option value="Хочу проконсультуватись">Хочу проконсультуватись</option>
+          <option value="Водій екіпажу Безпілотних систем">Оператор нрк</option>
+          <option value="Майстер-технік наземних дронів">Оператор Бомберів</option>
+          <option value="Оператор Бомберів">Водій екіпажу Безпілотних систем</option>
+          <option value="Інженер-сапер БПЛА">Радіотехнік наземних дронів</option>
+          <option value="Оперативний черговий">Інженер-сапер БпЛА</option>
+          <option value="Зв’язківець">Оперативний черговий</option>
+          <option value="Кухар">Зв’язківець</option>
+          <option value="Автослюсар">Кухар</option>
+          <option value="Автослюсар">Автомеханік</option>
+          <option value="Автослюсар">ІТ-спеціаліст</option>
+          <option value="Автослюсар">Автоелектрик</option>
+          <option value="Автослюсар">Спеціаліст 3D друку</option>
+          <option value="Автослюсар">Механік наземних дронів</option>
+        </select>
+      </li>
+      
+       <li class="form_item">
+        <label for="status" class="body_small">Оберіть ваш статус</label>
+        <select id="status" name="status" required class="text-field w-select">
+          <option value="Водій екіпажу Безпілотних систем">Цивільний</option>
+          <option value="Майстер-технік наземних дронів">СЗЧ</option>
+          <option value="Оператор Бомберів">Військовий</option>
+          <option value="Хочу проконсультуватись">Хочу проконсультуватись</option>
+        </select>
+      </li>
+  
+      <li class="form_item _20px">
+        <label class="w-checkbox checkbox-field">
+          <div class="w-checkbox-input w-checkbox-input--inputType-custom checkbox"></div>
+          <input type="checkbox" name="adult" id="18-58" style="opacity:0;position:absolute;z-index:-1">
+          <span class="body_small w-form-label" for="18-58">Мені від 18 до 58 років</span>
+        </label>
+      </li>
+  
+      <li class="form_item _20px">
+        <label class="w-checkbox checkbox-field checkbos-privacy">
+          <div class="w-checkbox-input w-checkbox-input--inputType-custom checkbox"></div>
+          <input type="checkbox" name="agree" required style="opacity:0;position:absolute;z-index:-1">
+          <span class="body_small w-form-label">
+            Натискаючи кнопку нижче, щоб продовжити, ви погоджуєтесь з нашою
+            <a href="https://ab3.avis-studio.com/privacy-policy/" class="checkbox-privacy-link">Політикою конфіденційності</a>
+          </span>
+        </label>
+      </li>
+  
+     <li class="form_item _20px">
+    <button
+      type="button"
+      id="nova-form-submit"
+      class="button w-button"
+      data-default-label="Відправити заявку"
+    >
+      
+      <img src="https://cdn.prod.website-files.com/69b3de7490741de79f71aec6/69b3e694c52d250ab430ca60_lert-corner.svg" 
+           loading="lazy" alt="" class="btn-corner-lert">
+  
+      <div class="btn-inner">
+        <div>Відправити заявку</div>
+  
+        <img src="https://cdn.prod.website-files.com/69b3de7490741de79f71aec6/69b3e694b52cbf5bc113d3a3_arrow-narrow-up-right.svg" 
+             loading="lazy" alt="" class="btn-icon">
+      </div>
+  
+      <img src="https://cdn.prod.website-files.com/69b3de7490741de79f71aec6/69b3e6949042bc8e481252bc_right-corner.svg" 
+           loading="lazy" alt="" class="btn-corner-right">
+  
+    </button>
+  </li>
+    </ul>
+  
+    <!-- Hidden input для turnstile -->
+    <input type="hidden" name="cf-turnstile-response" id="cf-chl-widget-hat88_response" value="">
+  
+    <!-- Приховані системні поля для UTM та джерела трафіку -->
+    <input type="hidden" name="utm_source" value="">
+    <input type="hidden" name="utm_medium" value="">
+    <input type="hidden" name="utm_campaign" value="">
+    <input type="hidden" name="utm_content" value="">
+    <input type="hidden" name="utm_term" value="">
+    <input type="hidden" name="gclid" value="">
+    <input type="hidden" name="fbclid" value="">
+    <input type="hidden" name="referrer" value="">
+  </form>
+<!--
+  Apps Script: doPost — JSON.parse(e.postData.contents) або e.parameter.payload
+-->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("wf-form-form");
+    var btn = document.getElementById("nova-form-submit");
+    if (!form || !btn) return;
+
+    var scriptURL =
+      "https://script.google.com/macros/s/AKfycby3-1YR1BUPUVW8dB7oJ6b0VRUPkzqgtQWWZKCmVIcPmkQDKATsRyLaIhwkvzL9c8bgOw/exec";
+
+    var SUCCESS_PATH = form.getAttribute("data-success-path") || "/success-page";
+
+    function showFail() {
+      var wrap = form.closest(".w-form");
+      var failEl = wrap && wrap.querySelector(".w-form-fail");
+      if (failEl) failEl.style.display = "block";
+    }
+
+    var btnLabelEl = btn.querySelector(".btn-inner div");
+
+    function setSending(isSending) {
+      var def = btn.getAttribute("data-default-label") || "Відправити заявку";
+      btn.disabled = !!isSending;
+      btn.setAttribute("aria-busy", isSending ? "true" : "false");
+
+      if (btnLabelEl) {
+        btnLabelEl.textContent = isSending
+          ? "Відправляємо"
+          : def;
+      }
+    }
+
+    // ==============================
+    // UTM/Referrer capture & persistence
+    // ==============================
+    var NETHUNT_HOOK_URL =
+      "https://nethunt.com/service/automation/hooks/69ca65db584a250a3eac84b2";
+    var urlParams = new URLSearchParams(window.location.search);
+    var utmKeys = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "gclid",
+      "fbclid",
+    ];
+
+    function setHidden(name, value) {
+      var el = form.querySelector('input[name="' + name + '"]');
+      if (el) el.value = value || "";
+    }
+
+    utmKeys.forEach(function (key) {
+      var v = urlParams.get(key);
+      if (!v) return;
+      try {
+        sessionStorage.setItem(key, v);
+      } catch (ignore) {}
+    });
+
+    try {
+      if (sessionStorage.getItem("entry_url") === null) {
+        sessionStorage.setItem("entry_url", window.location.href);
+      }
+    } catch (ignore) {}
+
+    utmKeys.forEach(function (key) {
+      var v = "";
+      try {
+        v = sessionStorage.getItem(key) || "";
+      } catch (ignore) {
+        v = "";
+      }
+      if (!v) v = urlParams.get(key) || "";
+      setHidden(key, v);
+    });
+    try {
+      setHidden("referrer", sessionStorage.getItem("entry_url") || window.location.href);
+    } catch (ignore) {
+      setHidden("referrer", window.location.href);
+    }
+
+    function mergeUtmIntoData(data) {
+      utmKeys.forEach(function (key) {
+        if (data[key]) return;
+        var v = "";
+        try {
+          v = sessionStorage.getItem(key) || "";
+        } catch (ignore) {
+          v = "";
+        }
+        if (!v) v = urlParams.get(key) || "";
+        if (v) data[key] = v;
+      });
+
+      if (!data.referrer) {
+        try {
+          data.referrer = sessionStorage.getItem("entry_url") || window.location.href;
+        } catch (ignore) {
+          data.referrer = window.location.href;
+        }
+      }
+      data.page_url = window.location.href;
+      return data;
+    }
+
+    async function sendToSheets() {
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      setSending(true);
+
+      var formData = new FormData(form);
+      var data = {};
+
+      formData.forEach(function (value, key) {
+        data[key] = value;
+      });
+
+      if (data.phone) {
+        data.phone = String(data.phone).replace(/^\+/, "");
+      }
+
+      var adultCheckbox = form.querySelector('input[name="adult"]');
+
+      data.adult =
+        adultCheckbox && adultCheckbox.checked
+          ? "так"
+          : "ні";
+
+      try {
+        mergeUtmIntoData(data);
+
+        // Extra POST to Nethunt hook (fire-and-forget)
+        try {
+          fetch(NETHUNT_HOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+            keepalive: true,
+          });
+        } catch (ignore) {}
+
+        await fetch(scriptURL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        });
+
+        window.location.assign(SUCCESS_PATH);
+
+      } catch (error) {
+
+        setSending(false);
+
+        showFail();
+
+        console.error("Помилка!", error);
+      }
+    }
+
+    btn.addEventListener("click", sendToSheets);
+
+    form.addEventListener(
+      "submit",
+      function (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      },
+      true
+    );
+
+    form.addEventListener("keydown", function (e) {
+
+      if (e.key !== "Enter") return;
+
+      if (e.target.tagName === "TEXTAREA") return;
+
+      e.preventDefault();
+
+      sendToSheets();
+
+    });
+  });
+</script>
+
+
+<!-- merged into the script above -->

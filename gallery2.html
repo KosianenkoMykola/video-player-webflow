@@ -1,0 +1,337 @@
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Draggable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/InertiaPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Observer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+
+<style>
+
+  .wf-design-mode .img-carousel__panel {
+    position: relative;
+  }
+  .wf-design-mode .img-carousel__list {
+    overflow: auto;
+    justify-content: flex-start;
+  }
+  .img-carousel__panel:nth-of-type(even) {
+    justify-content: center;
+  }
+  
+  /* Unified wrapper для каруселі та скролу */
+  .unified-carousel-section {
+    position: relative;
+    min-height: 300vh;
+    background: #000;
+    overflow-x: hidden;
+  }
+  
+  /* Контейнер каруселі з perspective - FIXED */
+  .img-carousel__wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    perspective: 1000px;
+    perspective-origin: center center;
+    z-index: 1;
+    overflow: hidden;
+  }
+  
+  /* 3D scene wrapper - спільний 3D простір */
+  .carousel-3d-scene {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  
+  /* 3D контейнер панелей */
+  [data-3d-carousel-wrap] {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+  
+  .img-carousel__panel {
+    transform-style: preserve-3d;
+  }
+  
+  .img-carousel__item {
+    display: block;
+  }
+  
+  .img-carousel__img {
+    display: block;
+  }
+  
+  /* Центральний текст в 3D просторі - контейнер для заголовків */
+  .carousel-center-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) translateZ(-400px) scale(1.4);
+    text-align: center;
+    pointer-events: none;
+    width: 50%;
+    transform-style: preserve-3d;
+  }
+  
+.carousel-center-text [data-sticky-title="heading"] {
+    color: #ffffff;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    text-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    visibility: hidden;
+  }
+  
+  .carousel-center-text [data-sticky-title="heading"].is--stacked {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+  }
+</style>
+
+<script>
+
+gsap.registerPlugin(Draggable, InertiaPlugin, Observer, ScrollTrigger, SplitText);
+ 
+function init3dImageCarousel() {
+  let radius;
+  let draggableInstance;
+  let observerInstance;
+  let spin;
+  let intro;
+  let lastWidth = window.innerWidth;
+  
+  const wrap = document.querySelector('[data-3d-carousel-wrap]');
+  if (!wrap) return;
+  
+  const scene = wrap.closest('.carousel-3d-scene');
+  const centerText = scene ? scene.querySelector('.carousel-center-text') : null;
+  const allHeadings = centerText ? Array.from(centerText.querySelectorAll('[data-sticky-title="heading"]')) : [];
+  const heading = allHeadings[0] || null;
+
+  // Залишаємо тільки один заголовок у сцені
+  allHeadings.slice(1).forEach(extraHeading => extraHeading.remove());
+
+  // Define the radius of your cylinder here
+  const calcRadius = () => {
+    if (window.innerWidth < 768) {
+      // На мобільних — збільшуємо радіус у 2 рази
+      radius = window.innerWidth * 1.0; // раніше було 0.5
+    } else {
+      radius = window.innerWidth * 0.5;
+    }
+  }
+  
+  // Destroy function to reset everything on resize
+  const destroy = () => {
+    draggableInstance && draggableInstance.kill();
+    observerInstance && observerInstance.kill();
+    spin && spin.kill();
+    intro && intro.kill();
+    ScrollTrigger.getAll().forEach(st => st.kill());
+    const panels = wrap.querySelectorAll('[data-3d-carousel-panel]');
+    gsap.set(panels, { clearProps: 'transform' });
+  };
+
+  // Create function that sets the spin, drag, and rotation
+  const create = () => {
+    calcRadius();
+    
+    const panels = wrap.querySelectorAll('[data-3d-carousel-panel]');
+    const content = wrap.querySelectorAll('[data-3d-carousel-content]');
+    const proxy = document.createElement('div');
+    const wrapProgress = gsap.utils.wrap(0, 1);
+    const dragDistance = window.innerWidth * 3; // Control the snapiness on drag
+    let startProg;
+
+    // Position panels in 3D space
+    panels.forEach(p => {
+      p.style.transformOrigin = `50% 50% ${-radius}px`;
+    });
+    
+        // Встановлюємо початкові значення для intro анімації
+    if (window.innerWidth < 768) {
+      gsap.set(wrap, { 
+        scale: 0.5, 
+        rotation: 12, 
+        transformOrigin: "center center",
+        opacity: 1
+      });
+    } else {
+      gsap.set(wrap, { 
+        scale: 0.5, 
+        rotation: 12, 
+        transformOrigin: "center center",
+        opacity: 1
+      });
+    }
+
+
+    // Center text is now just a container for headings (no Z positioning needed)
+
+    // Infinite rotation of all panels
+    spin = gsap.fromTo(
+      panels,
+      { rotationY: i => (i * 360) / panels.length },
+      { rotationY: '-=360', duration: 30, ease: 'none', repeat: -1 }
+    );
+    
+    // cheeky workaround to create some 'buffer' when scrolling back up
+    spin.progress(1000)
+
+    draggableInstance = Draggable.create(proxy, {
+      trigger: wrap,
+      type: 'x',
+      inertia: true,
+      allowNativeTouchScrolling: true,
+      onPress() {
+        // Subtle feedback on touch/mousedown of the wrap
+        gsap.to(content, { 
+          clipPath: 'inset(5%)',
+          duration: 0.3,
+          ease: 'power4.out',
+          overwrite: 'auto'
+        });
+        // Stop automatic spinning to prepare for drag
+        gsap.killTweensOf(spin);
+        spin.timeScale(0);
+        startProg = spin.progress();
+      },
+      onDrag() {
+        const p = startProg + (this.startX - this.x) / dragDistance;
+        spin.progress(wrapProgress(p));
+      },
+      onThrowUpdate() {
+        const p = startProg + (this.startX - this.x) / dragDistance;
+        spin.progress(wrapProgress(p));
+      },
+      onRelease() {
+        if (!this.tween || !this.tween.isActive()) {
+          gsap.to(spin, { timeScale: 1, duration: 0.1 });
+        }
+        gsap.to(content, {
+          clipPath: 'inset(0%)',
+          duration: 0.5,
+          ease: 'power4.out',
+          overwrite: 'auto'
+        });
+      },
+      onThrowComplete() {
+        gsap.to(spin, { timeScale: 1, duration: 0.1 });
+      }
+    })[0];
+
+    // Scroll-into-view animation - тільки один раз
+    const finalScale = window.innerWidth < 768 ? 1.6 : 1;
+    intro = gsap.timeline({
+      scrollTrigger: {
+        trigger: wrap,
+        start: 'top 80%',
+        end: 'bottom top',
+        scrub: false,
+        toggleActions: 'play none none none', // Грається тільки один раз
+        once: true // Тригер спрацьовує тільки один раз
+      },
+      defaults: { ease: 'expo.inOut' }
+    });
+    intro
+      .fromTo(spin, { timeScale: 15 }, { timeScale: 1, duration: 2 })
+      .fromTo(wrap, { scale: 0.5, rotation: 12 }, { scale: finalScale, rotation: 5, duration: 4 }, '<')
+      .fromTo(content, { autoAlpha: 0 }, { autoAlpha: 1, stagger: { amount: 1, from: 'random' } }, '<');
+
+    if (heading) {
+      // Зберігаємо оригінальний текст для screen readers
+      heading.setAttribute("aria-label", heading.textContent);
+      
+      // Розбиваємо текст на символи
+      const split = new SplitText(heading, { type: "words,chars" });
+      
+      // Ховаємо окремі слова від screen reader
+      split.words.forEach(word => word.setAttribute("aria-hidden", "true"));
+      
+      // Встановлюємо видимість заголовка
+      gsap.set(heading, { visibility: "visible" });
+      
+      // Анімація появи символів
+      gsap.from(split.chars, {
+        autoAlpha: 0,
+        stagger: { amount: 0.8, from: "start" },
+        duration: 0.8,
+        delay: 0.8,
+        ease: 'power2.out'
+      });
+    }
+  
+    // While-scrolling feedback
+    observerInstance = Observer.create({
+      target: window,
+      type: 'wheel,scroll,touch',
+      onChangeY: self => {
+        // Control how much scroll speed affects the rotation on scroll
+        let v = gsap.utils.clamp(-60, 60, self.velocityY * 0.005); 
+        spin.timeScale(v);
+        const resting = v < 0 ? -1 : 1;
+    
+        gsap.fromTo(
+          { value: v },
+          { value: v },
+          {
+            value: resting,
+            duration: 1.2,
+            onUpdate() {
+              spin.timeScale(this.targets()[0].value);
+            }
+          }
+        );
+      }
+    });
+    
+  };
+  
+  // First create on function call
+  create();
+
+  // Debounce function to use on resize events
+  const debounce = (fn, ms) => {
+    let t;
+    return () => {
+      clearTimeout(t);
+      t = setTimeout(fn, ms);
+    };
+  };
+  
+  // Whenever window resizes, first destroy, then re-init it all
+  window.addEventListener('resize', debounce(() => {
+    const newWidth = window.innerWidth;
+    if (newWidth !== lastWidth) {
+      lastWidth = newWidth;
+      destroy();
+      create();
+      ScrollTrigger.refresh();
+    }
+  }, 200));
+  
+  // Also re-apply text depth on orientation changes
+  window.addEventListener('orientationchange', () => {
+    destroy();
+    create();
+    ScrollTrigger.refresh();
+  });
+  
+}
+
+// Initialize both carousel and text animation
+document.addEventListener("DOMContentLoaded", () =>{
+  init3dImageCarousel();
+})
+</script>

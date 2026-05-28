@@ -1,0 +1,376 @@
+<!--
+ HOME
+-->
+<style>
+  .form-wrapper {
+    max-height: calc(100vh - 40px); /* працює всюди */
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+    display: none;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* активний стан */
+  .form-wrapper.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const popup = document.querySelector(".form-popup");
+    const bg = popup.querySelector(".form-bg");
+    const closeBtn = popup.querySelector(".form-close-button");
+
+    const buttons = document.querySelectorAll(".button");
+    const wrappers = popup.querySelectorAll(".form-wrapper");
+
+    // Сховати всі wrapper-и (без таймерів!)
+    function hideAllWrappers() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+        wrapper.style.display = "none";
+      });
+    }
+
+    // ВІДКРИТТЯ
+    buttons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const type = Array.from(button.classList).find(
+          (cls) => cls !== "button",
+        );
+
+        if (!type) return;
+
+        hideAllWrappers();
+
+        const target = popup.querySelector(".form-wrapper." + type);
+        if (!target) return;
+
+        popup.style.display = "flex";
+        document.body.style.overflow = "hidden";
+
+        target.style.display = "block";
+
+        // Точний тригер анімації
+        requestAnimationFrame(() => {
+          target.classList.add("is-active");
+        });
+      });
+    });
+
+    // ЗАКРИТТЯ
+    function closePopup() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+      });
+
+      setTimeout(() => {
+        popup.style.display = "none";
+        document.body.style.overflow = "";
+        hideAllWrappers();
+      }, 350); // = transition у CSS
+    }
+
+    closeBtn.addEventListener("click", closePopup);
+    bg.addEventListener("click", closePopup);
+  });
+</script>
+
+<!--
+ ABOUT
+-->
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+<script>
+  // Слайдер 1
+  const swiper = new Swiper(".swiper", {
+    // Optional parameters
+    direction: "horizontal",
+    loop: true,
+    breakpoints: {
+      320: {
+        slidesPerView: 1,
+        spaceBetween: 10,
+      },
+      480: {
+        slidesPerView: 2,
+        spaceBetween: 10,
+      },
+      640: {
+        slidesPerView: 3,
+        spaceBetween: 10,
+      },
+      980: {
+        slidesPerView: 4,
+        spaceBetween: 10,
+      },
+    },
+    // Navigation arrows
+    navigation: {
+      nextEl: ".slider-button-right",
+      prevEl: ".slider-button-left",
+    },
+  });
+</script>
+
+<style>
+  .form-wrapper {
+    max-height: calc(100vh - 40px); /* працює всюди */
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+    display: none;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* активний стан */
+  .form-wrapper.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const popup = document.querySelector(".form-popup");
+    const bg = popup.querySelector(".form-bg");
+    const closeBtn = popup.querySelector(".form-close-button");
+
+    const buttons = document.querySelectorAll(".button");
+    const wrappers = popup.querySelectorAll(".form-wrapper");
+
+    // Сховати всі wrapper-и (без таймерів!)
+    function hideAllWrappers() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+        wrapper.style.display = "none";
+      });
+    }
+
+    // ВІДКРИТТЯ
+    buttons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const type = Array.from(button.classList).find(
+          (cls) => cls !== "button",
+        );
+
+        if (!type) return;
+
+        hideAllWrappers();
+
+        const target = popup.querySelector(".form-wrapper." + type);
+        if (!target) return;
+
+        popup.style.display = "flex";
+        document.body.style.overflow = "hidden";
+
+        target.style.display = "block";
+
+        // Точний тригер анімації
+        requestAnimationFrame(() => {
+          target.classList.add("is-active");
+        });
+      });
+    });
+
+    // ЗАКРИТТЯ
+    function closePopup() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+      });
+
+      setTimeout(() => {
+        popup.style.display = "none";
+        document.body.style.overflow = "";
+        hideAllWrappers();
+      }, 350); // = transition у CSS
+    }
+
+    closeBtn.addEventListener("click", closePopup);
+    bg.addEventListener("click", closePopup);
+  });
+</script>
+
+<!--
+ INDIVIDUAL SERVICES
+-->
+<style>
+  .form-wrapper {
+    max-height: calc(100vh - 40px); /* працює всюди */
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 0.35s ease,
+      transform 0.35s ease;
+    display: none;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* активний стан */
+  .form-wrapper.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const popup = document.querySelector(".form-popup");
+    const bg = popup.querySelector(".form-bg");
+    const closeBtn = popup.querySelector(".form-close-button");
+
+    const buttons = document.querySelectorAll(".button");
+    const wrappers = popup.querySelectorAll(".form-wrapper");
+
+    // Сховати всі wrapper-и (без таймерів!)
+    function hideAllWrappers() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+        wrapper.style.display = "none";
+      });
+    }
+
+    // ВІДКРИТТЯ
+    buttons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const type = Array.from(button.classList).find(
+          (cls) => cls !== "button",
+        );
+
+        if (!type) return;
+
+        hideAllWrappers();
+
+        const target = popup.querySelector(".form-wrapper." + type);
+        if (!target) return;
+
+        popup.style.display = "flex";
+        document.body.style.overflow = "hidden";
+
+        target.style.display = "block";
+
+        // Точний тригер анімації
+        requestAnimationFrame(() => {
+          target.classList.add("is-active");
+        });
+      });
+    });
+
+    // ЗАКРИТТЯ
+    function closePopup() {
+      wrappers.forEach((wrapper) => {
+        wrapper.classList.remove("is-active");
+      });
+
+      setTimeout(() => {
+        popup.style.display = "none";
+        document.body.style.overflow = "";
+        hideAllWrappers();
+      }, 350); // = transition у CSS
+    }
+
+    closeBtn.addEventListener("click", closePopup);
+    bg.addEventListener("click", closePopup);
+  });
+</script>
+
+
+<!--
+ FOR BUSINESS
+-->
+<style>
+    .form-wrapper {
+      max-height: calc(100vh - 40px); /* працює всюди */
+      overflow-y: auto;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      display: none;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+    
+    /* активний стан */
+    .form-wrapper.is-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    
+    </style>
+    
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    
+      const popup = document.querySelector(".form-popup");
+      const bg = popup.querySelector(".form-bg");
+      const closeBtn = popup.querySelector(".form-close-button");
+    
+      const buttons = document.querySelectorAll(".button");
+      const wrappers = popup.querySelectorAll(".form-wrapper");
+    
+      // Сховати всі wrapper-и (без таймерів!)
+      function hideAllWrappers() {
+        wrappers.forEach(wrapper => {
+          wrapper.classList.remove("is-active");
+          wrapper.style.display = "none";
+        });
+      }
+    
+      // ВІДКРИТТЯ
+      buttons.forEach(button => {
+        button.addEventListener("click", function () {
+    
+          const type = Array.from(button.classList)
+            .find(cls => cls !== "button");
+    
+          if (!type) return;
+    
+          hideAllWrappers();
+    
+          const target = popup.querySelector(".form-wrapper." + type);
+          if (!target) return;
+    
+          popup.style.display = "flex";
+          document.body.style.overflow = "hidden";
+    
+          target.style.display = "block";
+    
+          // Точний тригер анімації
+          requestAnimationFrame(() => {
+            target.classList.add("is-active");
+          });
+        });
+      });
+    
+      // ЗАКРИТТЯ
+      function closePopup() {
+        wrappers.forEach(wrapper => {
+          wrapper.classList.remove("is-active");
+        });
+    
+        setTimeout(() => {
+          popup.style.display = "none";
+          document.body.style.overflow = "";
+          hideAllWrappers();
+        }, 350); // = transition у CSS
+      }
+    
+      closeBtn.addEventListener("click", closePopup);
+      bg.addEventListener("click", closePopup);
+    
+    });
+    </script>

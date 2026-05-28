@@ -1,0 +1,2221 @@
+<style>
+  .quiz_progress-bar {
+    transition: width 250ms ease;
+  }
+  .calc-step {
+    display: none;
+    opacity: 0;
+    transition: opacity 250ms ease-in-out;
+    will-change: opacity;
+    width: 100%;
+    min-height: 100%;
+    flex-direction: column;
+  }
+  .calc-step.is-active {
+    display: flex !important;
+    opacity: 1;
+  }
+  /* Стилі для клікабельного quiz_option_item */
+  .quiz_option_item {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  /* Стилі для активної опції через :has() селектор (якщо браузер підтримує) */
+  /* Webflow автоматично застосує стилі :checked до радіо-кнопки */
+  /* Якщо потрібно стилізувати батьківський елемент, використовуй селектор: */
+  /* .quiz_option_item:has(input[type="radio"]:checked) { ... } */
+</style>
+
+<!-- Калькулятор для ангару -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_1");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_hanger") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості ангару
+    const calculationData = {
+      width: 0, // ширина в метрах
+      length: 0, // довжина в метрах
+      height: 0, // висота в метрах
+      hangarType: null, // тип ангару: 'profiled', 'sandwich', 'refrigerated'
+      hangarTypePrice: 0, // ціна типу за м² підлоги
+      frameType: null, // тип каркасу: 'light', 'standard', 'reinforced', 'industrial'
+      framePrice: 0, // ціна каркасу за м² підлоги
+      windowsCount: 0, // кількість вікон
+      doorsCount: 0, // кількість дверей
+      gatesCount: 0, // кількість воріт
+      installation: false, // чи потрібен монтаж (+20%)
+      foundation: false, // чи потрібен фундамент
+    };
+
+    // Функція розрахунку загальної вартості
+    function calculateTotalPrice() {
+      const width = calculationData.width || 0;
+      const length = calculationData.length || 0;
+      const height = calculationData.height || 0;
+      const floorArea = width * length; // площа підлоги в м²
+
+      if (floorArea === 0) return 0;
+
+      // Розрахунок вартості типу ангару
+      let hangarTypeCost = 0;
+      // Якщо користувач ще не вибрав тип ангару, використовуємо мінімальну базову ціну
+      const effectiveHangarTypePrice = calculationData.hangarTypePrice || 270; // мінімальна ціна за м² підлоги
+
+      if (width > 0 && length > 0 && height > 0) {
+        const wallArea = 2 * (length + width) * height; // площа стін
+        const floorAreaCost = floorArea * effectiveHangarTypePrice;
+        hangarTypeCost = wallArea + floorAreaCost;
+      }
+
+      // Розрахунок вартості каркасу
+      // Якщо користувач ще не вибрав тип каркасу, використовуємо мінімальну базову ціну
+      const effectiveFramePrice = calculationData.framePrice || 1200;
+      const frameCost = floorArea * effectiveFramePrice;
+
+      // Розрахунок супутніх товарів
+      const windowsCost = calculationData.windowsCount * 4000;
+      const doorsCost = calculationData.doorsCount * 4000;
+      const gatesCost = calculationData.gatesCount * 25000;
+      const accessoriesCost = windowsCost + doorsCost + gatesCost;
+
+      // Розрахунок фундаменту
+      const foundationCost = calculationData.foundation ? floorArea * 1500 : 0;
+
+      // Базова вартість
+      let total = hangarTypeCost + frameCost + accessoriesCost + foundationCost;
+
+      // Додаємо монтаж (+20%)
+      if (calculationData.installation) {
+        total = total * 1.2;
+      }
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateTotalPrice() {
+      // Оновлюємо основний елемент ціни (якщо є)
+      if (totalPriceElement) {
+        const total = calculateTotalPrice();
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Оновлюємо ціну на поточному кроці (якщо є елемент на кроці)
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        const total = calculateTotalPrice();
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateProgress();
+
+      // Оновлюємо ціну при переході на будь-який крок
+      updateTotalPrice();
+    }
+
+    // Обробка повзунків розмірів (крок 1: ширина, довжина, висота)
+    function handleDimensionsInput() {
+      const widthInput = form.querySelector('[data-quiz="width"]');
+      const lengthInput = form.querySelector('[data-quiz="length"]');
+      const heightInput = form.querySelector('[data-quiz="height"]');
+      const widthDisplay = form.querySelector('[data-quiz="width-display"]');
+      const lengthDisplay = form.querySelector('[data-quiz="length-display"]');
+      const heightDisplay = form.querySelector('[data-quiz="height-display"]');
+
+      // Обробка ширини
+      if (widthInput) {
+        if (widthInput.value) {
+          calculationData.width = parseFloat(widthInput.value) || 0;
+        }
+        widthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          calculationData.width = value;
+          if (widthDisplay) {
+            widthDisplay.textContent = value + " м";
+          }
+          updateTotalPrice();
+        });
+        if (widthDisplay && widthInput.value) {
+          widthDisplay.textContent = (parseFloat(widthInput.value) || 0) + " м";
+        }
+      }
+
+      // Обробка довжини
+      if (lengthInput) {
+        if (lengthInput.value) {
+          calculationData.length = parseFloat(lengthInput.value) || 0;
+        }
+        lengthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          calculationData.length = value;
+          if (lengthDisplay) {
+            lengthDisplay.textContent = value + " м";
+          }
+          updateTotalPrice();
+        });
+        if (lengthDisplay && lengthInput.value) {
+          lengthDisplay.textContent =
+            (parseFloat(lengthInput.value) || 0) + " м";
+        }
+      }
+
+      // Обробка висоти
+      if (heightInput) {
+        if (heightInput.value) {
+          calculationData.height = parseFloat(heightInput.value) || 0;
+        }
+        heightInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          calculationData.height = value;
+          if (heightDisplay) {
+            heightDisplay.textContent = value + " м";
+          }
+          updateTotalPrice();
+        });
+        if (heightDisplay && heightInput.value) {
+          heightDisplay.textContent =
+            (parseFloat(heightInput.value) || 0) + " м";
+        }
+      }
+
+      // Оновлюємо ціну при ініціалізації якщо є значення
+      if (
+        calculationData.width > 0 ||
+        calculationData.length > 0 ||
+        calculationData.height > 0
+      ) {
+        updateTotalPrice();
+      }
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item
+    function makeOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        // Знаходимо радіо-кнопку всередині
+        const radioInput = item.querySelector('input[type="radio"]');
+        if (!radioInput) return;
+
+        // Додаємо обробник кліку на весь item
+        item.addEventListener("click", (e) => {
+          // Якщо клік був на самому input або label, не обробляємо (щоб не було подвійного кліку)
+          if (e.target === radioInput || e.target.closest("label")) {
+            return;
+          }
+          // Клікаємо на радіо-кнопку - Webflow автоматично застосує стилі :checked
+          radioInput.click();
+        });
+      });
+    }
+
+    // Обробка вибору типу ангару (крок 2)
+    function handleHangarType() {
+      const typeInputs = form.querySelectorAll('[data-quiz="hangar-type"]');
+      typeInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const hangarType = e.target.getAttribute("data-hangar-type");
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            calculationData.hangarType = hangarType;
+            calculationData.hangarTypePrice = price;
+            updateTotalPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору каркасу ангару (крок 3)
+    function handleFrameType() {
+      const frameInputs = form.querySelectorAll('[data-quiz="frame-type"]');
+      frameInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const frameType = e.target.getAttribute("data-frame-type");
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            calculationData.frameType = frameType;
+            calculationData.framePrice = price;
+            updateTotalPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка супутніх товарів (крок 4: вікна, двері, ворота)
+    function handleAccessories() {
+      // Вікна
+      const windowsInput = form.querySelector('[data-quiz="windows"]');
+      if (windowsInput) {
+        if (windowsInput.value) {
+          calculationData.windowsCount = parseInt(windowsInput.value) || 0;
+        }
+        windowsInput.addEventListener("input", (e) => {
+          calculationData.windowsCount = parseInt(e.target.value) || 0;
+          updateTotalPrice();
+        });
+      }
+
+      // Двері
+      const doorsInput = form.querySelector('[data-quiz="doors"]');
+      if (doorsInput) {
+        if (doorsInput.value) {
+          calculationData.doorsCount = parseInt(doorsInput.value) || 0;
+        }
+        doorsInput.addEventListener("input", (e) => {
+          calculationData.doorsCount = parseInt(e.target.value) || 0;
+          updateTotalPrice();
+        });
+      }
+
+      // Ворота
+      const gatesInput = form.querySelector('[data-quiz="gates"]');
+      if (gatesInput) {
+        if (gatesInput.value) {
+          calculationData.gatesCount = parseInt(gatesInput.value) || 0;
+        }
+        gatesInput.addEventListener("input", (e) => {
+          calculationData.gatesCount = parseInt(e.target.value) || 0;
+          updateTotalPrice();
+        });
+      }
+
+      // Обробка кнопки "Не потрібно" - очищає всі поля супутніх товарів
+      const noneOptionInput = form.querySelector('[data-quiz="option"]');
+      if (noneOptionInput) {
+        noneOptionInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            // Очищаємо значення полів
+            if (windowsInput) {
+              windowsInput.value = "0";
+              calculationData.windowsCount = 0;
+            }
+            if (doorsInput) {
+              doorsInput.value = "0";
+              calculationData.doorsCount = 0;
+            }
+            if (gatesInput) {
+              gatesInput.value = "0";
+              calculationData.gatesCount = 0;
+            }
+            // Оновлюємо ціну
+            updateTotalPrice();
+          }
+        });
+
+        // Коли користувач вводить значення в будь-яке поле, знімаємо вибір "Не потрібно"
+        const clearNoneOption = () => {
+          if (noneOptionInput.checked) {
+            noneOptionInput.checked = false;
+            // Оновлюємо Webflow стан (якщо використовується)
+            const customInput = noneOptionInput
+              .closest("label")
+              ?.querySelector(".w-form-formradioinput");
+            if (customInput) {
+              customInput.classList.remove("w--redirected-checked");
+            }
+          }
+        };
+
+        if (windowsInput) {
+          windowsInput.addEventListener("input", clearNoneOption);
+        }
+        if (doorsInput) {
+          doorsInput.addEventListener("input", clearNoneOption);
+        }
+        if (gatesInput) {
+          gatesInput.addEventListener("input", clearNoneOption);
+        }
+      }
+    }
+
+    // Обробка монтажу (крок 5)
+    function handleInstallation() {
+      const installationInputs = form.querySelectorAll(
+        '[data-quiz="installation"]'
+      );
+      installationInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const value = e.target.getAttribute("data-installation-value");
+            calculationData.installation = value === "yes";
+            updateTotalPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка фундаменту (крок 6)
+    function handleFoundation() {
+      const foundationInputs = form.querySelectorAll(
+        '[data-quiz="foundation"]'
+      );
+      foundationInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const value = e.target.getAttribute("data-foundation-value");
+            calculationData.foundation = value === "yes";
+            updateTotalPrice();
+          }
+        });
+      });
+    }
+
+    // Ініціалізація обробників
+    handleDimensionsInput();
+    handleHangarType();
+    handleFrameType();
+    handleAccessories();
+    handleInstallation();
+    handleFoundation();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeOptionItemClickable();
+
+    // init: show first step only
+    showStep(0);
+
+    // Next buttons inside steps (ignore real submit controls)
+    form.addEventListener("click", (e) => {
+      // Перевіряємо чи клік на кнопку наступного кроку
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      // Allow native submit to proceed (email delivery)
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      // Запобігаємо стандартній поведінці для <a> тегів
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // basic required check for current step (only if there are required fields)
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return; // stay if none selected
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      // Переходимо на наступний крок
+      showStep(active + 1);
+    });
+
+    // Auto-advance on radio change (лише для кроків із data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showStep(active + 1), 120);
+        }
+      });
+    });
+
+    // Let Webflow handle submit normally (POST). No scoring or Inputflow needed.
+  });
+</script>
+
+<!-- Калькулятор для хвірток -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_gate");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_gate_block") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості хвіртки
+    const gateData = {
+      width: 0, // ширина в метрах
+      height: 0, // висота в метрах
+      frame: { base: 0, coef: 0 }, // каркас
+      paint: { base: 0, coef: 0 }, // фарбування
+      fillCoef: 0, // наповнення (коефіцієнт для height * width)
+      lockPrice: 0, // замок (фіксована ціна)
+      works: [], // масив монтажних робіт [{ base, coef }]
+    };
+
+    // Функція розрахунку загальної вартості хвіртки
+    function calculateGateTotal() {
+      const width = gateData.width || 0;
+      const height = gateData.height || 0;
+
+      if (!width || !height) return 0;
+
+      const area = width * height;
+
+      // Каркас
+      let frameCost = 0;
+      if (gateData.frame) {
+        const base = gateData.frame.base || 0;
+        const coef = gateData.frame.coef || 0;
+        frameCost = base + coef * area;
+
+        // Додаткова надбавка в залежності від висоти
+        if (height > 0) {
+          if (height <= 2) {
+            frameCost += 2500;
+          } else {
+            frameCost += 4000;
+          }
+        }
+      }
+
+      // Фарбування
+      let paintCost = 0;
+      if (gateData.paint) {
+        const base = gateData.paint.base || 0;
+        const coef = gateData.paint.coef || 0;
+        paintCost = base + coef * area;
+      }
+
+      // Наповнення
+      const fillCost = gateData.fillCoef ? gateData.fillCoef * area : 0;
+
+      // Замок
+      const lockCost = gateData.lockPrice || 0;
+
+      // Монтажні роботи (сума всіх вибраних опцій)
+      let worksCost = 0;
+      if (Array.isArray(gateData.works) && gateData.works.length > 0) {
+        gateData.works.forEach((work) => {
+          const base = work.base || 0;
+          const coef = work.coef || 0;
+          worksCost += base + coef * area;
+        });
+      }
+
+      const total = frameCost + paintCost + fillCost + lockCost + worksCost;
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateGatePrice() {
+      const total = calculateGateTotal();
+
+      // Основна ціна (останній крок)
+      if (totalPriceElement) {
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Ціна на поточному кроці
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateGateProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showGateStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateGateProgress();
+      updateGatePrice();
+    }
+
+    // Обробка розмірів (висота, ширина)
+    function handleGateDimensions() {
+      const widthInput = form.querySelector('[data-quiz="width"]');
+      const heightInput = form.querySelector('[data-quiz="height"]');
+      const widthDisplay = form.querySelector('[data-quiz="width-display"]');
+      const heightDisplay = form.querySelector('[data-quiz="height-display"]');
+
+      if (widthInput) {
+        if (widthInput.value) {
+          gateData.width = parseFloat(widthInput.value) || 0;
+        }
+        widthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          gateData.width = value;
+          if (widthDisplay) {
+            widthDisplay.textContent = value + " м";
+          }
+          updateGatePrice();
+        });
+        if (widthDisplay && widthInput.value) {
+          widthDisplay.textContent = (parseFloat(widthInput.value) || 0) + " м";
+        }
+      }
+
+      if (heightInput) {
+        if (heightInput.value) {
+          gateData.height = parseFloat(heightInput.value) || 0;
+        }
+        heightInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          gateData.height = value;
+          if (heightDisplay) {
+            heightDisplay.textContent = value + " м";
+          }
+          updateGatePrice();
+        });
+        if (heightDisplay && heightInput.value) {
+          heightDisplay.textContent =
+            (parseFloat(heightInput.value) || 0) + " м";
+        }
+      }
+    }
+
+    // Обробка вибору каркасу
+    function handleGateFrame() {
+      const frameInputs = form.querySelectorAll('[data-quiz="gate-frame"]');
+      frameInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const base = parseFloat(e.target.getAttribute("data-base")) || 0;
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gateData.frame = { base, coef };
+            updateGatePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору фарбування
+    function handleGatePaint() {
+      const paintInputs = form.querySelectorAll('[data-quiz="gate-paint"]');
+      paintInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const base = parseFloat(e.target.getAttribute("data-base")) || 0;
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gateData.paint = { base, coef };
+            updateGatePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору наповнення
+    function handleGateFill() {
+      const fillInputs = form.querySelectorAll('[data-quiz="gate-fill"]');
+      fillInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gateData.fillCoef = coef;
+            updateGatePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору замка
+    function handleGateLock() {
+      const lockInputs = form.querySelectorAll('[data-quiz="gate-lock"]');
+      lockInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            gateData.lockPrice = price;
+            updateGatePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка монтажних робіт (можна вибрати кілька)
+    function handleGateWorks() {
+      const workInputs = form.querySelectorAll('[data-quiz="gate-work"]');
+      function recalcWorks() {
+        const selected = [];
+        workInputs.forEach((input) => {
+          if (input.checked) {
+            const base = parseFloat(input.getAttribute("data-base")) || 0;
+            const coef = parseFloat(input.getAttribute("data-coef")) || 0;
+            selected.push({ base, coef });
+          }
+        });
+        gateData.works = selected;
+        updateGatePrice();
+      }
+      workInputs.forEach((input) => {
+        input.addEventListener("change", recalcWorks);
+      });
+      // Ініціалізація
+      recalcWorks();
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item (хвіртка)
+    function makeGateOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        // Знаходимо радіо-кнопку або чекбокс всередині
+        const radioInput = item.querySelector('input[type="radio"]');
+        const checkboxInput = item.querySelector('input[type="checkbox"]');
+        const input = radioInput || checkboxInput;
+
+        if (!input) return;
+
+        // Додаємо обробник кліку на весь item
+        item.addEventListener("click", (e) => {
+          // Якщо клік був на самому input або label, не обробляємо (щоб не було подвійного кліку)
+          if (e.target === input || e.target.closest("label")) {
+            return;
+          }
+          // Клікаємо на радіо-кнопку/чекбокс - Webflow автоматично застосує стилі :checked
+          input.click();
+        });
+      });
+    }
+
+    // Ініціалізація для хвіртки
+    handleGateDimensions();
+    handleGateFrame();
+    handleGatePaint();
+    handleGateFill();
+    handleGateLock();
+    handleGateWorks();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeGateOptionItemClickable();
+
+    // init: показуємо перший крок
+    showGateStep(0);
+
+    // Обробка кнопок "Далі"
+    form.addEventListener("click", (e) => {
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return;
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      showGateStep(active + 1);
+    });
+
+    // Auto-advance на радіо (за потреби можна додати атрибут data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showGateStep(active + 1), 120);
+        }
+      });
+    });
+  });
+</script>
+
+<!-- Калькулятор для воріт -->
+<script>
+  // Калькулятор для воріт
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_gates");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_gates_block") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості воріт
+    const gatesData = {
+      width: 0, // ширина в метрах
+      height: 0, // висота в метрах
+      frame: { base: 0, coef: 0 }, // каркас
+      paint: { base: 0, coef: 0 }, // фарбування
+      fillCoef: 0, // наповнення (коефіцієнт для height * width)
+      lockPrice: 0, // замок (фіксована ціна)
+      works: [], // масив монтажних робіт [{ base, coef }]
+    };
+
+    // Функція розрахунку загальної вартості воріт
+    function calculateGatesTotal() {
+      const width = gatesData.width || 0;
+      const height = gatesData.height || 0;
+
+      if (!width || !height) return 0;
+
+      const area = width * height;
+
+      // Каркас
+      let frameCost = 0;
+      if (gatesData.frame) {
+        const base = gatesData.frame.base || 0;
+        const coef = gatesData.frame.coef || 0;
+        frameCost = base + coef * area;
+
+        // Додаткова надбавка в залежності від висоти
+        if (height > 0) {
+          if (height <= 4.1) {
+            frameCost += 2500;
+          } else {
+            frameCost += 4000;
+          }
+        }
+      }
+
+      // Фарбування
+      let paintCost = 0;
+      if (gatesData.paint) {
+        const base = gatesData.paint.base || 0;
+        const coef = gatesData.paint.coef || 0;
+        paintCost = base + coef * area;
+      }
+
+      // Наповнення
+      const fillCost = gatesData.fillCoef ? gatesData.fillCoef * area : 0;
+
+      // Замок
+      const lockCost = gatesData.lockPrice || 0;
+
+      // Монтажні роботи (сума всіх вибраних опцій)
+      let worksCost = 0;
+      if (Array.isArray(gatesData.works) && gatesData.works.length > 0) {
+        gatesData.works.forEach((work) => {
+          const base = work.base || 0;
+          const coef = work.coef || 0;
+          worksCost += base + coef * area;
+        });
+      }
+
+      const total = frameCost + paintCost + fillCost + lockCost + worksCost;
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateGatesPrice() {
+      const total = calculateGatesTotal();
+
+      // Основна ціна (останній крок)
+      if (totalPriceElement) {
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Ціна на поточному кроці
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateGatesProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showGatesStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateGatesProgress();
+      updateGatesPrice();
+    }
+
+    // Обробка розмірів (висота, ширина)
+    function handleGatesDimensions() {
+      const widthInput = form.querySelector('[data-quiz="width"]');
+      const heightInput = form.querySelector('[data-quiz="height"]');
+      const widthDisplay = form.querySelector('[data-quiz="width-display"]');
+      const heightDisplay = form.querySelector('[data-quiz="height-display"]');
+
+      if (widthInput) {
+        if (widthInput.value) {
+          gatesData.width = parseFloat(widthInput.value) || 0;
+        }
+        widthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          gatesData.width = value;
+          if (widthDisplay) {
+            widthDisplay.textContent = value + " м";
+          }
+          updateGatesPrice();
+        });
+        if (widthDisplay && widthInput.value) {
+          widthDisplay.textContent = (parseFloat(widthInput.value) || 0) + " м";
+        }
+      }
+
+      if (heightInput) {
+        if (heightInput.value) {
+          gatesData.height = parseFloat(heightInput.value) || 0;
+        }
+        heightInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          gatesData.height = value;
+          if (heightDisplay) {
+            heightDisplay.textContent = value + " м";
+          }
+          updateGatesPrice();
+        });
+        if (heightDisplay && heightInput.value) {
+          heightDisplay.textContent =
+            (parseFloat(heightInput.value) || 0) + " м";
+        }
+      }
+    }
+
+    // Обробка вибору каркасу
+    function handleGatesFrame() {
+      const frameInputs = form.querySelectorAll('[data-quiz="gates-frame"]');
+      frameInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const base = parseFloat(e.target.getAttribute("data-base")) || 0;
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gatesData.frame = { base, coef };
+            updateGatesPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору фарбування
+    function handleGatesPaint() {
+      const paintInputs = form.querySelectorAll('[data-quiz="gates-paint"]');
+      paintInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const base = parseFloat(e.target.getAttribute("data-base")) || 0;
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gatesData.paint = { base, coef };
+            updateGatesPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору наповнення
+    function handleGatesFill() {
+      const fillInputs = form.querySelectorAll('[data-quiz="gates-fill"]');
+      fillInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            gatesData.fillCoef = coef;
+            updateGatesPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору замка
+    function handleGatesLock() {
+      const lockInputs = form.querySelectorAll('[data-quiz="gates-lock"]');
+      lockInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            gatesData.lockPrice = price;
+            updateGatesPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка монтажних робіт (можна вибрати кілька)
+    function handleGatesWorks() {
+      const workInputs = form.querySelectorAll('[data-quiz="gates-work"]');
+      function recalcWorks() {
+        const selected = [];
+        workInputs.forEach((input) => {
+          if (input.checked) {
+            const base = parseFloat(input.getAttribute("data-base")) || 0;
+            const coef = parseFloat(input.getAttribute("data-coef")) || 0;
+            selected.push({ base, coef });
+          }
+        });
+        gatesData.works = selected;
+        updateGatesPrice();
+      }
+      workInputs.forEach((input) => {
+        input.addEventListener("change", recalcWorks);
+      });
+      // Ініціалізація
+      recalcWorks();
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item (ворота)
+    function makeGatesOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        // Знаходимо радіо-кнопку або чекбокс всередині
+        const radioInput = item.querySelector('input[type="radio"]');
+        const checkboxInput = item.querySelector('input[type="checkbox"]');
+        const input = radioInput || checkboxInput;
+
+        if (!input) return;
+
+        // Додаємо обробник кліку на весь item
+        item.addEventListener("click", (e) => {
+          // Якщо клік був на самому input або label, не обробляємо (щоб не було подвійного кліку)
+          if (e.target === input || e.target.closest("label")) {
+            return;
+          }
+          // Клікаємо на радіо-кнопку/чекбокс - Webflow автоматично застосує стилі :checked
+          input.click();
+        });
+      });
+    }
+
+    // Ініціалізація для воріт
+    handleGatesDimensions();
+    handleGatesFrame();
+    handleGatesPaint();
+    handleGatesFill();
+    handleGatesLock();
+    handleGatesWorks();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeGatesOptionItemClickable();
+
+    // init: показуємо перший крок
+    showGatesStep(0);
+
+    // Обробка кнопок "Далі"
+    form.addEventListener("click", (e) => {
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return;
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      showGatesStep(active + 1);
+    });
+
+    // Auto-advance на радіо (за потреби можна додати атрибут data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showGatesStep(active + 1), 120);
+        }
+      });
+    });
+  });
+</script>
+
+<!-- Калькулятор для навісів -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_canopy");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_canopy_block") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості навісу
+    const canopyData = {
+      length: 0, // довжина в метрах
+      width: 0, // ширина в метрах
+      typeCoef: 0, // коефіцієнт типу навісу (base + coef)
+      paintCoef: 0, // коефіцієнт фарбування за м²
+      installation: false, // монтаж (+689)
+      roofMaterialCoef: 0, // коефіцієнт матеріалу на дах за м²
+      roofInstallation: false, // монтаж покрівлі (+550)
+      decorativeCoef: 0, // коефіцієнт декоративної зашивки
+    };
+
+    // Функція розрахунку загальної вартості навісу
+    function calculateCanopyTotal() {
+      const length = canopyData.length || 0;
+      const width = canopyData.width || 0;
+
+      if (!length || !width) return 0;
+
+      const area = length * width; // площа в м²
+      const perimeter = 2 * (length + width); // периметр для декоративної зашивки
+
+      // Тип навісу: (base + coef) * м²
+      const typeCost = canopyData.typeCoef * area;
+
+      // Фарбування: coef * м²
+      const paintCost = canopyData.paintCoef * area;
+
+      // Монтаж
+      const installationCost = canopyData.installation ? 689 : 0;
+
+      // Матеріал на дах: coef * м²
+      const roofMaterialCost = canopyData.roofMaterialCoef * area;
+
+      // Монтаж покрівлі
+      const roofInstallationCost = canopyData.roofInstallation ? 550 : 0;
+
+      // Декоративна зашивка: (довжина+ширина)*2*coef
+      const decorativeCost =
+        canopyData.decorativeCoef > 0
+          ? perimeter * canopyData.decorativeCoef
+          : 0;
+
+      const total =
+        typeCost +
+        paintCost +
+        installationCost +
+        roofMaterialCost +
+        roofInstallationCost +
+        decorativeCost;
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateCanopyPrice() {
+      const total = calculateCanopyTotal();
+
+      // Основна ціна (останній крок)
+      if (totalPriceElement) {
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Ціна на поточному кроці
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateCanopyProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showCanopyStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateCanopyProgress();
+      updateCanopyPrice();
+    }
+
+    // Обробка розмірів (довжина, ширина)
+    function handleCanopyDimensions() {
+      const lengthInput = form.querySelector('[data-quiz="length"]');
+      const widthInput = form.querySelector('[data-quiz="width"]');
+      const lengthDisplay = form.querySelector('[data-quiz="length-display"]');
+      const widthDisplay = form.querySelector('[data-quiz="width-display"]');
+
+      if (lengthInput) {
+        if (lengthInput.value) {
+          canopyData.length = parseFloat(lengthInput.value) || 0;
+        }
+        lengthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          canopyData.length = value;
+          if (lengthDisplay) {
+            lengthDisplay.textContent = value + " м";
+          }
+          updateCanopyPrice();
+        });
+        if (lengthDisplay && lengthInput.value) {
+          lengthDisplay.textContent =
+            (parseFloat(lengthInput.value) || 0) + " м";
+        }
+      }
+
+      if (widthInput) {
+        if (widthInput.value) {
+          canopyData.width = parseFloat(widthInput.value) || 0;
+        }
+        widthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          canopyData.width = value;
+          if (widthDisplay) {
+            widthDisplay.textContent = value + " м";
+          }
+          updateCanopyPrice();
+        });
+        if (widthDisplay && widthInput.value) {
+          widthDisplay.textContent = (parseFloat(widthInput.value) || 0) + " м";
+        }
+      }
+    }
+
+    // Обробка вибору типу навісу
+    function handleCanopyType() {
+      const typeInputs = form.querySelectorAll('[data-quiz="canopy-type"]');
+      typeInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            // Формула: (base + coef) * м², тому зберігаємо суму
+            const base = parseFloat(e.target.getAttribute("data-base")) || 0;
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            canopyData.typeCoef = base + coef;
+            updateCanopyPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору фарбування
+    function handleCanopyPaint() {
+      const paintInputs = form.querySelectorAll('[data-quiz="canopy-paint"]');
+      paintInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            canopyData.paintCoef = coef;
+            updateCanopyPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка комбінованого монтажу даху / покрівлі
+    // Варіанти:
+    // - Монтаж даху        -> +689 грн
+    // - Монтаж покрівлі    -> +550 грн
+    // - Монтаж даху і покрівлі -> +689 + 550 грн
+    // - Не потрібно        -> 0 грн
+    function handleCanopyInstallationCombo() {
+      const installationInputs = form.querySelectorAll(
+        '[data-quiz="canopy-installation"]'
+      );
+      installationInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const mode = e.target.getAttribute("data-installation-mode");
+            // даху = frame, покрівлі = roof
+            canopyData.installation = mode === "frame" || mode === "both"; // монтаж даху
+            canopyData.roofInstallation = mode === "roof" || mode === "both"; // монтаж покрівлі
+            updateCanopyPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка матеріалу на дах
+    function handleCanopyRoofMaterial() {
+      const roofInputs = form.querySelectorAll(
+        '[data-quiz="canopy-roof-material"]'
+      );
+      roofInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            canopyData.roofMaterialCoef = coef;
+            updateCanopyPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка декоративної зашивки
+    function handleCanopyDecorative() {
+      const decorativeInputs = form.querySelectorAll(
+        '[data-quiz="canopy-decorative"]'
+      );
+      decorativeInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const coef = parseFloat(e.target.getAttribute("data-coef")) || 0;
+            canopyData.decorativeCoef = coef;
+            updateCanopyPrice();
+          }
+        });
+      });
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item (навіс)
+    function makeCanopyOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        const radioInput = item.querySelector('input[type="radio"]');
+        const checkboxInput = item.querySelector('input[type="checkbox"]');
+        const input = radioInput || checkboxInput;
+
+        if (!input) return;
+
+        item.addEventListener("click", (e) => {
+          if (e.target === input || e.target.closest("label")) {
+            return;
+          }
+          input.click();
+        });
+      });
+    }
+
+    // Ініціалізація для навісу
+    handleCanopyDimensions();
+    handleCanopyType();
+    handleCanopyPaint();
+    handleCanopyInstallationCombo();
+    handleCanopyRoofMaterial();
+    handleCanopyDecorative();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeCanopyOptionItemClickable();
+
+    // init: показуємо перший крок
+    showCanopyStep(0);
+
+    // Обробка кнопок "Далі"
+    form.addEventListener("click", (e) => {
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return;
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      showCanopyStep(active + 1);
+    });
+
+    // Auto-advance на радіо (за потреби можна додати атрибут data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showCanopyStep(active + 1), 120);
+        }
+      });
+    });
+  });
+</script>
+
+<!-- Калькулятор для парканів -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_fence");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_fence_block") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості паркану
+    const fenceData = {
+      height: 0, // висота в метрах
+      length: 0, // довжина в метрах
+      metalTypePrice: 0, // ціна типу металу за м² (210, 280, 345)
+      fillMaterialPrice: 450, // матеріал заповнення за м² (фіксовано)
+      fenceTypePrice: 0, // ціна виду паркану за м²
+      coatingPrice: 0, // ціна покриття за м²
+      installationMode: null, // 'foundation', 'installation', 'both', 'none'
+      deliveryType: null, // 'kyiv', 'kyiv-region', або null
+      automation: false, // автоматика (24000 грн)
+      brickPillarsCount: 0, // кількість цегляних стовпців
+      urgent: false, // термінове виконання (+20%)
+    };
+
+    // Функція розрахунку загальної вартості паркану
+    function calculateFenceTotal() {
+      const height = fenceData.height || 0;
+      const length = fenceData.length || 0;
+
+      if (!height || !length) return 0;
+
+      const area = height * length; // площа в м²
+
+      // Тип металу + матеріал заповнення: (ціна_металу + 450) × м²
+      const metalCostByArea =
+        (fenceData.metalTypePrice + fenceData.fillMaterialPrice) * area;
+      
+      // Мінімальна вартість за погонний метр: 2000 грн/м.п.
+      const metalCostByLength = 2000 * length;
+      
+      // Беремо максимум між розрахунком за площею та мінімальною вартістю за п/м
+      const metalCost = Math.max(metalCostByArea, metalCostByLength);
+
+      // Вид паркану: ціна × м²
+      const fenceTypeCost = fenceData.fenceTypePrice * area;
+
+      // Покриття: ціна × м²
+      const coatingCost = fenceData.coatingPrice * area;
+
+      // Монтаж та фундамент
+      let installationCost = 0;
+      let foundationCost = 0;
+
+      if (fenceData.installationMode === "foundation") {
+        foundationCost = 600 * length;
+      } else if (fenceData.installationMode === "installation") {
+        installationCost = 800 * area;
+      } else if (fenceData.installationMode === "both") {
+        installationCost = 800 * area;
+        foundationCost = 600 * length;
+      }
+      // Якщо 'none' або null - обидві ціни залишаються 0
+
+      // Цегляні стовпці: 3200 × кількість
+      const brickPillarsCost = fenceData.brickPillarsCount * 3200;
+
+      // Автоматика: 24000
+      const automationCost = fenceData.automation ? 24000 : 0;
+
+      // Базова вартість
+      let total =
+        metalCost +
+        fenceTypeCost +
+        coatingCost +
+        installationCost +
+        foundationCost +
+        brickPillarsCost +
+        automationCost;
+
+      // Термінове виконання (+20%)
+      if (fenceData.urgent) {
+        total = total * 1.2;
+      }
+
+      // Доставка
+      let deliveryCost = 0;
+      if (fenceData.deliveryType === "kyiv") {
+        deliveryCost = 1000;
+      } else if (fenceData.deliveryType === "kyiv-region") {
+        deliveryCost = 1500;
+      }
+
+      total += deliveryCost;
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateFencePrice() {
+      const total = calculateFenceTotal();
+
+      // Основна ціна (останній крок)
+      if (totalPriceElement) {
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Ціна на поточному кроці
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateFenceProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showFenceStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateFenceProgress();
+      updateFencePrice();
+    }
+
+    // Обробка розмірів (висота, довжина)
+    function handleFenceDimensions() {
+      const heightInput = form.querySelector('[data-quiz="height"]');
+      const lengthInput = form.querySelector('[data-quiz="length"]');
+      const heightDisplay = form.querySelector('[data-quiz="height-display"]');
+      const lengthDisplay = form.querySelector('[data-quiz="length-display"]');
+
+      if (heightInput) {
+        if (heightInput.value) {
+          fenceData.height = parseFloat(heightInput.value) || 0;
+        }
+        heightInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          fenceData.height = value;
+          if (heightDisplay) {
+            heightDisplay.textContent = value + " м";
+          }
+          updateFencePrice();
+        });
+        if (heightDisplay && heightInput.value) {
+          heightDisplay.textContent =
+            (parseFloat(heightInput.value) || 0) + " м";
+        }
+      }
+
+      if (lengthInput) {
+        if (lengthInput.value) {
+          fenceData.length = parseFloat(lengthInput.value) || 0;
+        }
+        lengthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          fenceData.length = value;
+          if (lengthDisplay) {
+            lengthDisplay.textContent = value + " м";
+          }
+          updateFencePrice();
+        });
+        if (lengthDisplay && lengthInput.value) {
+          lengthDisplay.textContent =
+            (parseFloat(lengthInput.value) || 0) + " м";
+        }
+      }
+    }
+
+    // Обробка вибору типу металу
+    function handleFenceMetalType() {
+      const metalInputs = form.querySelectorAll('[data-quiz="fence-metal"]');
+      metalInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            fenceData.metalTypePrice = price;
+            updateFencePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору виду паркану
+    function handleFenceType() {
+      const typeInputs = form.querySelectorAll('[data-quiz="fence-type"]');
+      typeInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            fenceData.fenceTypePrice = price;
+            updateFencePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору покриття
+    function handleFenceCoating() {
+      const coatingInputs = form.querySelectorAll(
+        '[data-quiz="fence-coating"]'
+      );
+      coatingInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            fenceData.coatingPrice = price;
+            updateFencePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка монтажу
+    function handleFenceInstallation() {
+      const installationInputs = form.querySelectorAll(
+        '[data-quiz="fence-installation"]'
+      );
+      installationInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const mode = e.target.getAttribute("data-installation-mode");
+            fenceData.installationMode = mode;
+            updateFencePrice();
+          }
+        });
+      });
+    }
+
+    // Обробка додаткових опцій
+    function handleFenceOptions() {
+      // Доставка (радіо-кнопки)
+      const deliveryInputs = form.querySelectorAll(
+        '[data-quiz="fence-delivery"]'
+      );
+      deliveryInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const deliveryType = e.target.getAttribute("data-delivery-type");
+            fenceData.deliveryType =
+              deliveryType === "none" ? null : deliveryType;
+            updateFencePrice();
+          }
+        });
+      });
+
+      // Автоматика
+      const automationInput = form.querySelector(
+        '[data-quiz="fence-automation"]'
+      );
+      if (automationInput) {
+        automationInput.addEventListener("change", (e) => {
+          fenceData.automation = e.target.checked;
+          updateFencePrice();
+        });
+      }
+
+      // Цегляні стовпці
+      const pillarsInput = form.querySelector('[data-quiz="fence-pillars"]');
+      if (pillarsInput) {
+        if (pillarsInput.value) {
+          fenceData.brickPillarsCount = parseInt(pillarsInput.value) || 0;
+        }
+        pillarsInput.addEventListener("input", (e) => {
+          fenceData.brickPillarsCount = parseInt(e.target.value) || 0;
+          updateFencePrice();
+        });
+      }
+
+      // Термінове виконання
+      const urgentInput = form.querySelector('[data-quiz="fence-urgent"]');
+      if (urgentInput) {
+        urgentInput.addEventListener("change", (e) => {
+          fenceData.urgent = e.target.checked;
+          updateFencePrice();
+        });
+      }
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item (паркан)
+    function makeFenceOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        const radioInput = item.querySelector('input[type="radio"]');
+        const checkboxInput = item.querySelector('input[type="checkbox"]');
+        const input = radioInput || checkboxInput;
+
+        if (!input) return;
+
+        item.addEventListener("click", (e) => {
+          if (e.target === input || e.target.closest("label")) {
+            return;
+          }
+          input.click();
+        });
+      });
+    }
+
+    // Ініціалізація для паркану
+    handleFenceDimensions();
+    handleFenceMetalType();
+    handleFenceType();
+    handleFenceCoating();
+    handleFenceInstallation();
+    handleFenceOptions();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeFenceOptionItemClickable();
+
+    // init: показуємо перший крок
+    showFenceStep(0);
+
+    // Обробка кнопок "Далі"
+    form.addEventListener("click", (e) => {
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return;
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      showFenceStep(active + 1);
+    });
+
+    // Auto-advance на радіо (за потреби можна додати атрибут data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showFenceStep(active + 1), 120);
+        }
+      });
+    });
+  });
+</script>
+
+<!-- Калькулятор для сходів та перил -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".calculate_form_stairs");
+    if (!form) return;
+
+    const steps = Array.from(form.querySelectorAll(".calc-step"));
+    const container = form.closest(".calculate_form_stairs_block") || document;
+    const bar = container.querySelector('[if-element="progress-bar"]');
+    const totalPriceElement = container.querySelector(
+      '[if-element="total-price"]'
+    );
+
+    let active = 0;
+
+    // Дані для розрахунку вартості сходів та перил
+    const stairsData = {
+      width: 0, // ширина в метрах
+      height: 0, // висота в метрах
+      stepsCount: 0, // кількість сходинок (вводиться користувачем)
+      railingTypePrice: 0, // ціна типу перил за м.п.
+      coatingPrice: 0, // ціна покриття за м²
+      railingInstallation: false, // монтаж перил (2000 грн/м.п.)
+      deliveryType: null, // 'kyiv', 'kyiv-region', або null
+      antiSlip: false, // антиковзкі накладки (800 грн/м.п.)
+      lighting: false, // підсвітка (480 грн/м.п.)
+      urgent: false, // термінове виконання (+20%)
+      customDesign: false, // індивідуальний дизайн (30000 грн)
+    };
+
+    // Функція розрахунку загальної вартості сходів та перил
+    function calculateStairsTotal() {
+      const width = stairsData.width || 0;
+      const height = stairsData.height || 0;
+      const stepsCount = stairsData.stepsCount || 0;
+
+      if (!width || !height || !stepsCount) return 0;
+
+      // Вартість сходинок (введена користувачем кількість)
+      const stepCost = stepsCount * 4750; // 4750 грн за сходинку
+
+      // Довжина перил (гіпотенуза прямокутного трикутника)
+      const railingLength = Math.sqrt(width * width + height * height);
+
+      // Тип перил: ціна × довжина
+      const railingCost = stairsData.railingTypePrice * railingLength;
+
+      // Покриття: площа сходів (ширина × довжина)
+      const stairsArea = width * railingLength;
+      const coatingCost = stairsData.coatingPrice * stairsArea;
+
+      // Монтаж перил: 2000 × довжина
+      const railingInstallationCost = stairsData.railingInstallation
+        ? 2000 * railingLength
+        : 0;
+
+      // Доставка
+      let deliveryCost = 0;
+      if (stairsData.deliveryType === "kyiv") {
+        deliveryCost = 1000;
+      } else if (stairsData.deliveryType === "kyiv-region") {
+        deliveryCost = 1500;
+      }
+
+      // Антиковзкі накладки: 800 × довжина
+      const antiSlipCost = stairsData.antiSlip ? 800 * railingLength : 0;
+
+      // Підсвітка: 480 × довжина
+      const lightingCost = stairsData.lighting ? 480 * railingLength : 0;
+
+      // Індивідуальний дизайн: 30000
+      const customDesignCost = stairsData.customDesign ? 30000 : 0;
+
+      // Базова вартість
+      let total =
+        stepCost +
+        railingCost +
+        coatingCost +
+        railingInstallationCost +
+        deliveryCost +
+        antiSlipCost +
+        lightingCost +
+        customDesignCost;
+
+      // Термінове виконання (+20%)
+      if (stairsData.urgent) {
+        total = total * 1.2;
+      }
+
+      return Math.round(total);
+    }
+
+    // Оновлення відображення загальної ціни на всіх кроках
+    function updateStairsPrice() {
+      const total = calculateStairsTotal();
+
+      // Основна ціна (останній крок)
+      if (totalPriceElement) {
+        totalPriceElement.textContent = total.toLocaleString("uk-UA") + " грн";
+      }
+
+      // Ціна на поточному кроці
+      const currentStepPrice = steps[active]?.querySelector(
+        '[if-element="step-price"]'
+      );
+      if (currentStepPrice) {
+        currentStepPrice.textContent = total.toLocaleString("uk-UA") + " ₴";
+      }
+    }
+
+    function updateStairsProgress() {
+      if (!bar) return;
+      const pct = Math.round(((active + 1) / steps.length) * 100);
+      bar.style.width = pct + "%";
+    }
+
+    function showStairsStep(i) {
+      active = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach((s, idx) => {
+        if (idx === active) {
+          s.classList.add("is-active");
+        } else {
+          s.classList.remove("is-active");
+        }
+      });
+      updateStairsProgress();
+      updateStairsPrice();
+    }
+
+    // Обробка розмірів (висота, ширина, кількість сходинок)
+    function handleStairsDimensions() {
+      const heightInput = form.querySelector('[data-quiz="height"]');
+      const widthInput = form.querySelector('[data-quiz="width"]');
+      const stepsCountInput = form.querySelector('[data-quiz="steps-count"]');
+      const heightDisplay = form.querySelector('[data-quiz="height-display"]');
+      const widthDisplay = form.querySelector('[data-quiz="width-display"]');
+      const stepsCountDisplay = form.querySelector(
+        '[data-quiz="steps-count-display"]'
+      );
+
+      // Обробка висоти
+      if (heightInput) {
+        if (heightInput.value) {
+          stairsData.height = parseFloat(heightInput.value) || 0;
+        }
+        heightInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          stairsData.height = value;
+          if (heightDisplay) {
+            heightDisplay.textContent = value + " м";
+          }
+          updateStairsPrice();
+        });
+        if (heightDisplay && heightInput.value) {
+          heightDisplay.textContent =
+            (parseFloat(heightInput.value) || 0) + " м";
+        }
+      }
+
+      // Обробка ширини
+      if (widthInput) {
+        if (widthInput.value) {
+          stairsData.width = parseFloat(widthInput.value) || 0;
+        }
+        widthInput.addEventListener("input", (e) => {
+          const value = parseFloat(e.target.value) || 0;
+          stairsData.width = value;
+          if (widthDisplay) {
+            widthDisplay.textContent = value + " м";
+          }
+          updateStairsPrice();
+        });
+        if (widthDisplay && widthInput.value) {
+          widthDisplay.textContent = (parseFloat(widthInput.value) || 0) + " м";
+        }
+      }
+
+      // Обробка кількості сходинок
+      if (stepsCountInput) {
+        if (stepsCountInput.value) {
+          stairsData.stepsCount = parseInt(stepsCountInput.value) || 0;
+        }
+        stepsCountInput.addEventListener("input", (e) => {
+          const value = parseInt(e.target.value) || 0;
+          stairsData.stepsCount = value;
+          if (stepsCountDisplay) {
+            stepsCountDisplay.textContent = value;
+          }
+          updateStairsPrice();
+        });
+        if (stepsCountDisplay && stepsCountInput.value) {
+          stepsCountDisplay.textContent = parseInt(stepsCountInput.value) || 0;
+        }
+      }
+    }
+
+    // Обробка вибору типу перил
+    function handleStairsRailingType() {
+      const railingInputs = form.querySelectorAll(
+        '[data-quiz="stairs-railing"]'
+      );
+      railingInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            // Якщо є діапазон цін, беремо середнє значення
+            const priceMin =
+              parseFloat(e.target.getAttribute("data-price-min")) || 0;
+            const priceMax =
+              parseFloat(e.target.getAttribute("data-price-max")) || 0;
+            // Якщо є діапазон, беремо середнє, інакше використовуємо data-price
+            if (priceMin > 0 && priceMax > 0) {
+              stairsData.railingTypePrice = (priceMin + priceMax) / 2;
+            } else {
+              stairsData.railingTypePrice =
+                parseFloat(e.target.getAttribute("data-price")) || 0;
+            }
+            updateStairsPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка вибору покриття
+    function handleStairsCoating() {
+      const coatingInputs = form.querySelectorAll(
+        '[data-quiz="stairs-coating"]'
+      );
+      coatingInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const price = parseFloat(e.target.getAttribute("data-price")) || 0;
+            stairsData.coatingPrice = price;
+            updateStairsPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка монтажу та доставки
+    function handleStairsInstallation() {
+      // Монтаж перил
+      const railingInstallationInput = form.querySelector(
+        '[data-quiz="stairs-railing-installation"]'
+      );
+      if (railingInstallationInput) {
+        railingInstallationInput.addEventListener("change", (e) => {
+          stairsData.railingInstallation = e.target.checked;
+          updateStairsPrice();
+        });
+      }
+
+      // Доставка
+      const deliveryInputs = form.querySelectorAll(
+        '[data-quiz="stairs-delivery"]'
+      );
+      deliveryInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            const deliveryType = e.target.getAttribute("data-delivery-type");
+            stairsData.deliveryType =
+              deliveryType === "none" ? null : deliveryType;
+            updateStairsPrice();
+          }
+        });
+      });
+    }
+
+    // Обробка додаткових опцій
+    function handleStairsOptions() {
+      const antiSlipInput = form.querySelector(
+        '[data-quiz="stairs-anti-slip"]'
+      );
+      const lightingInput = form.querySelector('[data-quiz="stairs-lighting"]');
+      const urgentInput = form.querySelector('[data-quiz="stairs-urgent"]');
+      const customDesignInput = form.querySelector(
+        '[data-quiz="stairs-custom-design"]'
+      );
+      const optionsNoneInput = form.querySelector(
+        '[data-quiz="stairs-options-none"]'
+      );
+
+      // Функція для зняття всіх чекбоксів
+      function uncheckAllOptions() {
+        if (antiSlipInput) antiSlipInput.checked = false;
+        if (lightingInput) lightingInput.checked = false;
+        if (urgentInput) urgentInput.checked = false;
+        if (customDesignInput) customDesignInput.checked = false;
+        stairsData.antiSlip = false;
+        stairsData.lighting = false;
+        stairsData.urgent = false;
+        stairsData.customDesign = false;
+      }
+
+      // Функція для зняття "Не потрібно"
+      function uncheckNoneOption() {
+        if (optionsNoneInput) optionsNoneInput.checked = false;
+      }
+
+      // Обробка "Не потрібно"
+      if (optionsNoneInput) {
+        optionsNoneInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            uncheckAllOptions();
+            updateStairsPrice();
+          }
+        });
+      }
+
+      // Антиковзкі накладки
+      if (antiSlipInput) {
+        antiSlipInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            uncheckNoneOption();
+          }
+          stairsData.antiSlip = e.target.checked;
+          updateStairsPrice();
+        });
+      }
+
+      // Підсвітка
+      if (lightingInput) {
+        lightingInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            uncheckNoneOption();
+          }
+          stairsData.lighting = e.target.checked;
+          updateStairsPrice();
+        });
+      }
+
+      // Термінове виконання
+      if (urgentInput) {
+        urgentInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            uncheckNoneOption();
+          }
+          stairsData.urgent = e.target.checked;
+          updateStairsPrice();
+        });
+      }
+
+      // Індивідуальний дизайн
+      if (customDesignInput) {
+        customDesignInput.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            uncheckNoneOption();
+          }
+          stairsData.customDesign = e.target.checked;
+          updateStairsPrice();
+        });
+      }
+    }
+
+    // Функція для обробки кліку на весь quiz_option_item (сходи)
+    function makeStairsOptionItemClickable() {
+      const optionItems = form.querySelectorAll(".quiz_option_item");
+      optionItems.forEach((item) => {
+        const radioInput = item.querySelector('input[type="radio"]');
+        const checkboxInput = item.querySelector('input[type="checkbox"]');
+        const input = radioInput || checkboxInput;
+
+        if (!input) return;
+
+        item.addEventListener("click", (e) => {
+          if (e.target === input || e.target.closest("label")) {
+            return;
+          }
+          input.click();
+        });
+      });
+    }
+
+    // Ініціалізація для сходів
+    handleStairsDimensions();
+    handleStairsRailingType();
+    handleStairsCoating();
+    handleStairsInstallation();
+    handleStairsOptions();
+
+    // Робимо всі quiz_option_item клікабельними
+    makeStairsOptionItemClickable();
+
+    // init: показуємо перший крок
+    showStairsStep(0);
+
+    // Обробка кнопок "Далі"
+    form.addEventListener("click", (e) => {
+      const btn = e.target.closest('[if-element="button-next"], .quiz_button');
+      if (!btn) return;
+
+      if (btn.matches('input[type="submit"], button[type="submit"]')) return;
+
+      if (btn.tagName === "A") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const req = steps[active].querySelectorAll(
+        "input[required], select[required], textarea[required]"
+      );
+      if (req.length > 0) {
+        for (const el of req) {
+          if (el.type === "radio") {
+            const group = form.querySelectorAll(
+              `input[type="radio"][name="${el.name}"]`
+            );
+            if (![...group].some((r) => r.checked)) {
+              return;
+            }
+          } else if (!el.value && el.value !== "0") {
+            el.focus();
+            return;
+          }
+        }
+      }
+
+      showStairsStep(active + 1);
+    });
+
+    // Auto-advance на радіо (за потреби можна додати атрибут data-auto-next)
+    steps.forEach((step, idx) => {
+      if (!step.hasAttribute("data-auto-next")) return;
+      step.addEventListener("change", (e) => {
+        if (e.target && e.target.matches('input[type="radio"]')) {
+          if (idx === active) setTimeout(() => showStairsStep(active + 1), 120);
+        }
+      });
+    });
+  });
+</script>

@@ -1,0 +1,95 @@
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+/>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<style>
+      .swiper { overflow: hidden; }
+      /* Активний слайд — без розмиття */
+      .swiper-slide-active {
+        filter: blur(0);
+        transform: scale(2.25);
+        z-index: 2;
+      }
+
+      /* Наступний і попередній слайди — з розмиттям */
+      .swiper-slide-next,
+      .swiper-slide-prev {
+        filter: blur(4px) brightness(0.9);
+        transform: scale(0.95);
+        z-index: 1;
+      }
+      /* correct selector: class-based, not tag */
+      .swiper-slide {
+        background-position: center;
+        background-size: cover;
+        transition: transform 0.45s ease, filter 0.45s ease, opacity 0.3s ease;
+        will-change: transform, filter;
+        opacity: 0; /* hide far slides */
+        pointer-events: none;
+      }
+
+      /* show only prev/active/next */
+      .swiper-slide-prev,
+      .swiper-slide-active,
+      .swiper-slide-next { opacity: 1; pointer-events: auto; }
+      .swiper-slide img {
+        object-fit: cover;
+        display: block;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.45s ease; /* scale only the content */
+        transform-origin: center center;
+      }
+
+      /* make active content bigger without breaking Swiper's transforms */
+      .swiper-slide-active img { transform: scale(1.25); }
+      .swiper-slide-prev img,
+      .swiper-slide-next img { transform: scale(0.92); }
+      /* Fix Webflow tabs blowing up width on the homepage gallery */
+      #gallery .w-tab-content,
+      #gallery .w-tab-content .w-tab-pane {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      #gallery .js-coverflow { width: 100% !important; }
+</style>
+
+<script>
+
+  // Init all identical sliders independently
+  document.querySelectorAll('.js-coverflow').forEach((el) => {
+    new Swiper(el, {
+      // Optional parameters
+      effect: 'coverflow',
+      grabCursor: true,
+      centeredSlides: true,
+      slidesPerView: 3,
+      loop: true,
+      watchSlidesProgress: true,
+      observeParents: true,
+      observer: true,
+      spaceBetween: 10,
+      coverflowEffect: {
+        rotate: 10,
+        stretch: 50,
+        depth: 100,
+        modifier: 1,
+        slideShadows: true,
+      },
+
+      // responsive: 1 on phones, 2 on tablets, 3 on desktops
+      breakpoints: {
+        320: { slidesPerView: 1, spaceBetween: 10 },
+        640: { slidesPerView: 3, spaceBetween: 10 },
+        980: { slidesPerView: 3, spaceBetween: 10 },
+      },
+      // Navigation arrows - scoped to current slider
+      navigation: {
+        nextEl: el.querySelector('.slider-button-right'),
+        prevEl: el.querySelector('.slider-button-left'),
+      },
+    });
+  });
+</script>
