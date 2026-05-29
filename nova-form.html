@@ -24,7 +24,17 @@
   
       <li class="form_item">
         <label for="phone" class="body_small">Номер телефону*</label>
-        <input class="text-field phone-input w-input" maxlength="256" name="phone" placeholder="+38 (0__) ___ __ __" type="text" id="phone">
+        <input
+          class="text-field phone-input w-input"
+          maxlength="19"
+          name="phone"
+          placeholder="+38 (0__) ___ __ __"
+          type="tel"
+          id="phone"
+          required
+          title="Повний номер: +38 (063) 000 00 00"
+          autocomplete="tel"
+        >
       </li>
   
       <li class="form_item">
@@ -35,29 +45,30 @@
       <li class="form_item">
         <label for="specialty" class="body_small">Оберіть спеціальність</label>
         <select id="specialty" name="specialty" required class="text-field w-select">
-                  <option value="Хочу проконсультуватись">Хочу проконсультуватись</option>
-          <option value="Водій екіпажу Безпілотних систем">Оператор нрк</option>
-          <option value="Майстер-технік наземних дронів">Оператор Бомберів</option>
-          <option value="Оператор Бомберів">Водій екіпажу Безпілотних систем</option>
-          <option value="Інженер-сапер БПЛА">Радіотехнік наземних дронів</option>
-          <option value="Оперативний черговий">Інженер-сапер БпЛА</option>
-          <option value="Зв’язківець">Оперативний черговий</option>
-          <option value="Кухар">Зв’язківець</option>
-          <option value="Автослюсар">Кухар</option>
-          <option value="Автослюсар">Автомеханік</option>
-          <option value="Автослюсар">ІТ-спеціаліст</option>
-          <option value="Автослюсар">Автоелектрик</option>
-          <option value="Автослюсар">Спеціаліст 3D друку</option>
-          <option value="Автослюсар">Механік наземних дронів</option>
+          <!-- IMPORTANT: value має дорівнювати тому, що ви хочете отримати в таблиці/CRM -->
+          <option value="Хочу проконсультуватись">Хочу проконсультуватись</option>
+          <option value="Оператор нрк">Оператор нрк</option>
+          <option value="Оператор Бомберів">Оператор Бомберів</option>
+          <option value="Водій екіпажу Безпілотних систем">Водій екіпажу Безпілотних систем</option>
+          <option value="Радіотехнік наземних дронів">Радіотехнік наземних дронів</option>
+          <option value="Інженер-сапер БпЛА">Інженер-сапер БпЛА</option>
+          <option value="Оперативний черговий">Оперативний черговий</option>
+          <option value="Зв’язківець">Зв’язківець</option>
+          <option value="Кухар">Кухар</option>
+          <option value="Автомеханік">Автомеханік</option>
+          <option value="ІТ-спеціаліст">ІТ-спеціаліст</option>
+          <option value="Автоелектрик">Автоелектрик</option>
+          <option value="Спеціаліст 3D друку">Спеціаліст 3D друку</option>
+          <option value="Механік наземних дронів">Механік наземних дронів</option>
         </select>
       </li>
       
        <li class="form_item">
         <label for="status" class="body_small">Оберіть ваш статус</label>
         <select id="status" name="status" required class="text-field w-select">
-          <option value="Водій екіпажу Безпілотних систем">Цивільний</option>
-          <option value="Майстер-технік наземних дронів">СЗЧ</option>
-          <option value="Оператор Бомберів">Військовий</option>
+          <option value="Цивільний">Цивільний</option>
+          <option value="СЗЧ">СЗЧ</option>
+          <option value="Військовий">Військовий</option>
           <option value="Хочу проконсультуватись">Хочу проконсультуватись</option>
         </select>
       </li>
@@ -119,19 +130,18 @@
     <input type="hidden" name="fbclid" value="">
     <input type="hidden" name="referrer" value="">
   </form>
-<!--
-  Apps Script: doPost — JSON.parse(e.postData.contents) або e.parameter.payload
--->
+
+  
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("wf-form-form");
     var btn = document.getElementById("nova-form-submit");
     if (!form || !btn) return;
 
-    var scriptURL =
-      "https://script.google.com/macros/s/AKfycby3-1YR1BUPUVW8dB7oJ6b0VRUPkzqgtQWWZKCmVIcPmkQDKATsRyLaIhwkvzL9c8bgOw/exec";
+    var PROXY_URL = "https://web-hook-nova.vercel.app/api/submit";
 
-    var SUCCESS_PATH = form.getAttribute("data-success-path") || "/success-page";
+    var SUCCESS_PATH =
+      form.getAttribute("data-success-path") || "/success-page";
 
     function showFail() {
       var wrap = form.closest(".w-form");
@@ -147,17 +157,13 @@
       btn.setAttribute("aria-busy", isSending ? "true" : "false");
 
       if (btnLabelEl) {
-        btnLabelEl.textContent = isSending
-          ? "Відправляємо"
-          : def;
+        btnLabelEl.textContent = isSending ? "Відправляємо" : def;
       }
     }
 
     // ==============================
     // UTM/Referrer capture & persistence
     // ==============================
-    var NETHUNT_HOOK_URL =
-      "https://nethunt.com/service/automation/hooks/69ca65db584a250a3eac84b2";
     var urlParams = new URLSearchParams(window.location.search);
     var utmKeys = [
       "utm_source",
@@ -198,10 +204,101 @@
       if (!v) v = urlParams.get(key) || "";
       setHidden(key, v);
     });
+    // referrer: зберігаємо ПОВНИЙ landing URL з query string (для offline conversion, gclid/fbclid тощо)
     try {
-      setHidden("referrer", sessionStorage.getItem("entry_url") || window.location.href);
+      var entryUrl = sessionStorage.getItem("entry_url") || window.location.href;
+      setHidden("referrer", entryUrl);
     } catch (ignore) {
       setHidden("referrer", window.location.href);
+    }
+
+    const phoneInput = form.querySelector('input[name="phone"]');
+
+    function validatePhoneField() {
+      if (!phoneInput) return true;
+      const digits = phoneInput.value.replace(/\D/g, '');
+      if (digits.length < 12) {
+        phoneInput.setCustomValidity('Введіть повний номер: +38 (063) 000 00 00');
+        return false;
+      }
+      phoneInput.setCustomValidity('');
+      return true;
+    }
+
+    function formatPhone(digits) {
+      let f = '';
+      if (digits.length > 0) f = '+38 (' + digits.slice(0, 3);
+      if (digits.length >= 3) f += ') ' + digits.slice(3, 6);
+      if (digits.length >= 6) f += ' ' + digits.slice(6, 8);
+      if (digits.length >= 8) f += ' ' + digits.slice(8, 10);
+      return f;
+    }
+
+    function getDigits(val) {
+      let d = val.replace(/\D/g, '');
+      if (d.startsWith('380')) d = d.slice(2);
+      else if (d.startsWith('38')) d = d.slice(2);
+      return d.slice(0, 10);
+    }
+
+    function setToEnd(input) {
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+
+    if (phoneInput) {
+      phoneInput.addEventListener('keydown', function (e) {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (['Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          const digits = getDigits(this.value);
+          if (!digits.length) return;
+          this.value = formatPhone(digits.slice(0, -1));
+          this.setCustomValidity('');
+          setToEnd(this);
+          return;
+        }
+
+        if (e.key === 'Delete') {
+          e.preventDefault();
+          return; // курсор завжди в кінці — Delete нічого не робить
+        }
+
+        if (!/^\d$/.test(e.key)) {
+          e.preventDefault();
+          return;
+        }
+
+        e.preventDefault();
+        const digits = getDigits(this.value);
+        if (digits.length >= 10) return;
+        this.value = formatPhone(digits + e.key);
+        this.setCustomValidity('');
+        setToEnd(this);
+      });
+
+      phoneInput.addEventListener('paste', function (e) {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        this.value = formatPhone(getDigits(pasted));
+        this.setCustomValidity('');
+        setToEnd(this);
+      });
+
+      phoneInput.addEventListener('focus', function () {
+        setToEnd(this);
+      });
+
+      phoneInput.addEventListener('click', function () {
+        setToEnd(this);
+      });
+
+      phoneInput.addEventListener('blur', function () {
+        const digits = this.value.replace(/\D/g, '');
+        if (digits.length < 12) this.value = '';
+      });
     }
 
     function mergeUtmIntoData(data) {
@@ -219,7 +316,8 @@
 
       if (!data.referrer) {
         try {
-          data.referrer = sessionStorage.getItem("entry_url") || window.location.href;
+          data.referrer =
+            sessionStorage.getItem("entry_url") || window.location.href;
         } catch (ignore) {
           data.referrer = window.location.href;
         }
@@ -229,6 +327,10 @@
     }
 
     async function sendToSheets() {
+      if (!validatePhoneField()) {
+        if (phoneInput) phoneInput.reportValidity();
+        return;
+      }
 
       if (!form.checkValidity()) {
         form.reportValidity();
@@ -250,37 +352,28 @@
 
       var adultCheckbox = form.querySelector('input[name="adult"]');
 
-      data.adult =
-        adultCheckbox && adultCheckbox.checked
-          ? "так"
-          : "ні";
+      data.adult = adultCheckbox && adultCheckbox.checked ? "так" : "ні";
 
       try {
         mergeUtmIntoData(data);
 
-        // Extra POST to Nethunt hook (fire-and-forget)
-        try {
-          fetch(NETHUNT_HOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-            keepalive: true,
-          });
-        } catch (ignore) {}
+        var headers = { "Content-Type": "application/json" };
+        var webhookSecret = form.getAttribute("data-webhook-secret");
+        if (webhookSecret) {
+          headers["X-Webhook-Secret"] = webhookSecret;
+        }
 
-        await fetch(scriptURL, {
+        var res = await fetch(PROXY_URL, {
           method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: headers,
           body: JSON.stringify(data),
         });
+        if (!res.ok) {
+          throw new Error("Submit failed: " + res.status);
+        }
 
         window.location.assign(SUCCESS_PATH);
-
       } catch (error) {
-
         setSending(false);
 
         showFail();
@@ -297,11 +390,10 @@
         e.preventDefault();
         e.stopImmediatePropagation();
       },
-      true
+      true,
     );
 
     form.addEventListener("keydown", function (e) {
-
       if (e.key !== "Enter") return;
 
       if (e.target.tagName === "TEXTAREA") return;
@@ -309,10 +401,8 @@
       e.preventDefault();
 
       sendToSheets();
-
     });
   });
 </script>
-
 
 <!-- merged into the script above -->
